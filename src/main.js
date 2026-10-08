@@ -4,8 +4,9 @@ import { createScene } from './scene.js';
 import { loadModel } from './models/index.js';
 import { Fingering } from './highlight.js';
 import { loadSample, playNote, stopAll } from './audio.js';
-import { midiToBothNames } from './notes.js';
+import { midiToBothNames, midiToName } from './notes.js';
 import { createStaff } from './staff.js';
+import { MAJOR_KEYS, scaleSequence } from './data/scales.js';
 import { startTuner, stopTuner } from './tuner.js';
 
 const MAP_MODE = new URLSearchParams(location.search).has('map');
@@ -21,6 +22,9 @@ const ui = {
   staff: $('staff'), audioStatus: $('audio-status'), credit: $('credit'),
   resetView: $('reset-view'), tunerToggle: $('tuner-toggle'), tuner: $('tuner'),
   tunerNote: $('tuner-note'), tunerNeedle: $('tuner-needle'), tunerReadout: $('tuner-readout'),
+  divider: $('divider'), scaleKey: $('scale-key'), octaves: $('octaves'), staffWrap: $('staff-wrap'),
+  staffTitle: $('staff-title'), staffPrev: $('staff-prev'), staffNext: $('staff-next'), staffFull: $('staff-full'),
+  scaleInfo: $('scale-info'),
 };
 
 const state = { inst: null, index: 0, alt: 0, fingering: null, scaleTimer: null };
@@ -31,10 +35,12 @@ view.onFrame.add((dt, t) => state.fingering?.update(dt, t));
 const saved = (() => {
   try { return JSON.parse(localStorage.getItem('fingering-chart') ?? '{}'); } catch { return {}; }
 })();
+// Layout and scale choices: { panelW, viewerH, scaleKey, octaves }.
+const prefs = { scaleKey: 'chromatic', octaves: 1, ...saved.prefs };
 function save() {
   try {
     localStorage.setItem('fingering-chart', JSON.stringify({
-      instrument: state.inst.id, midi: currentEntry().midi,
+      instrument: state.inst.id, midi: currentEntry().midi, prefs,
     }));
   } catch { /* storage unavailable */ }
 }
@@ -128,6 +134,8 @@ function render() {
 
   state.fingering?.show(current.keys, current.slide);
   staff?.select(state.index);
+  updateScaleInfo();
+  ui.staffTitle.textContent = midiToBothNames(entry.midi);
   save();
   syncSustain();
 }
@@ -217,23 +225,62 @@ function stopScale() {
   ui.scale.setAttribute('aria-pressed', 'false');
 }
 
+/** Chart indices to play: the chromatic run from the current note, or a major scale. */
+function scaleNotes() {
+  const { chart, transpose } = state.inst;
+  if (prefs.scaleKey === 'chromatic') {
+    const from = state.index === chart.length - 1 ? 0 : state.index;
+    return { indices: chart.slice(from).map((_, i) => from + i), label: '' };
+  }
+  const key = MAJOR_KEYS.find((k) => k.name === prefs.scaleKey) ?? MAJOR_KEYS[0];
+  const seq = scaleSequence(chart, transpose, key.pc, prefs.octaves);
+  if (!seq.indices.length) return { indices: [], label: `${key.name} major doesn't fit this instrument's range.` };
+  const written = transpose ? ` · written ${midiToName(seq.tonic).replace(/-?\d+$/, '')} major` : '';
+  const oct = `${seq.octaves} octave${seq.octaves > 1 ? 's' : ''}`;
+  const limited = seq.octaves < prefs.octaves ? ` (range allows ${seq.octaves})` : '';
+  return { indices: seq.indices, label: `Concert ${key.name} major${written} · ${oct}${limited}` };
+}
+
 ui.scale.addEventListener('click', () => {
   if (state.scaleTimer) { stopScale(); stopAll(); return; }
+  const { indices } = scaleNotes();
+  if (!indices.length) return;
   setPlaying(false);
   unlockAudio();
   ui.scale.textContent = 'Stop';
   ui.scale.setAttribute('aria-pressed', 'true');
-  if (state.index === state.inst.chart.length - 1) go(0);
+  let n = 0;
   const step = () => {
+    go(indices[n]);
     playCurrent(0.55);
-    if (state.index >= state.inst.chart.length - 1) {
-      state.scaleTimer = setTimeout(stopScale, 600);
-      return;
-    }
-    state.scaleTimer = setTimeout(() => { go(state.index + 1); step(); }, 650);
+    n++;
+    state.scaleTimer = n < indices.length ? setTimeout(step, 650) : setTimeout(stopScale, 600);
   };
   step();
 });
+
+// Key picker and octave toggle.
+ui.scaleKey.append(new Option('Chromatic', 'chromatic'));
+for (const k of MAJOR_KEYS) ui.scaleKey.append(new Option(`${k.name} major (concert)`, k.name));
+const octaveButtons = [...ui.octaves.querySelectorAll('button')];
+function syncScaleOptions() {
+  ui.scaleKey.value = prefs.scaleKey;
+  for (const b of octaveButtons) {
+    b.setAttribute('aria-pressed', String(Number(b.dataset.octaves) === prefs.octaves));
+    b.disabled = prefs.scaleKey === 'chromatic';
+  }
+  updateScaleInfo();
+}
+/** Describe what Play scale will play for the current instrument and choices. */
+function updateScaleInfo() {
+  if (!state.inst) return;
+  ui.scaleInfo.textContent = prefs.scaleKey === 'chromatic' ? 'Chromatic, from the current note to the top' : scaleNotes().label;
+}
+ui.scaleKey.addEventListener('change', () => { prefs.scaleKey = ui.scaleKey.value; syncScaleOptions(); save(); });
+for (const b of octaveButtons) {
+  b.addEventListener('click', () => { prefs.octaves = Number(b.dataset.octaves); syncScaleOptions(); save(); });
+}
+syncScaleOptions();
 
 // ---------------------------------------------------------------- tuner
 // Shows the note being played in the current instrument's written pitch, so it matches
@@ -295,9 +342,89 @@ ui.tunerNote.addEventListener('click', () => {
   else ui.audioStatus.textContent = `${midiToBothNames(heardMidi)} is out of range for ${state.inst.name}.`;
 });
 
+// ---------------------------------------------------------------- resizable panel
+// Drag the divider to resize the panel (side by side) or the 3D view (stacked on phones).
+const stacked = () => matchMedia('(max-width: 760px)').matches;
+const root = document.documentElement.style;
+
+function applyLayout() {
+  if (prefs.panelW) root.setProperty('--panel-w', `${prefs.panelW}px`);
+  else root.removeProperty('--panel-w');
+  if (prefs.viewerH) root.setProperty('--viewer-h', `${prefs.viewerH}vh`);
+  else root.removeProperty('--viewer-h');
+  ui.divider.setAttribute('aria-orientation', stacked() ? 'horizontal' : 'vertical');
+}
+
+function resizeTo(clientX, clientY) {
+  if (stacked()) {
+    const top = ui.viewer.getBoundingClientRect().top;
+    prefs.viewerH = Math.round(Math.min(75, Math.max(20, ((clientY - top) / innerHeight) * 100)));
+  } else {
+    prefs.panelW = Math.round(Math.min(innerWidth * 0.7, Math.max(260, innerWidth - clientX)));
+  }
+  applyLayout();
+}
+
+ui.divider.addEventListener('pointerdown', (e) => {
+  ui.divider.setPointerCapture(e.pointerId);
+  ui.divider.classList.add('dragging');
+  e.preventDefault();
+});
+ui.divider.addEventListener('pointermove', (e) => {
+  if (ui.divider.hasPointerCapture(e.pointerId)) resizeTo(e.clientX, e.clientY);
+});
+const endDrag = (e) => {
+  if (!ui.divider.hasPointerCapture(e.pointerId)) return;
+  ui.divider.releasePointerCapture(e.pointerId);
+  ui.divider.classList.remove('dragging');
+  save();
+};
+ui.divider.addEventListener('pointerup', endDrag);
+ui.divider.addEventListener('pointercancel', endDrag);
+ui.divider.addEventListener('dblclick', () => {
+  delete prefs[stacked() ? 'viewerH' : 'panelW'];
+  applyLayout();
+  save();
+});
+ui.divider.addEventListener('keydown', (e) => {
+  const delta = { ArrowLeft: 20, ArrowRight: -20, ArrowUp: -20, ArrowDown: 20 }[e.key];
+  if (delta === undefined) return;
+  e.preventDefault();
+  e.stopPropagation(); // don't also change the note
+  const r = ui.divider.getBoundingClientRect();
+  if (stacked()) resizeTo(0, r.top + delta);
+  else resizeTo(r.left - delta, 0);
+  save();
+});
+addEventListener('resize', applyLayout);
+applyLayout();
+
+// ---------------------------------------------------------------- fullscreen staff
+// A fixed overlay works everywhere (iPhone Safari can't fullscreen page elements); the
+// Fullscreen API also hides the browser's own bars where it's supported.
+let staffFullscreen = false;
+
+function setStaffFullscreen(on) {
+  staffFullscreen = on;
+  ui.staffWrap.classList.toggle('fullscreen', on);
+  ui.staffFull.textContent = on ? '✕' : '⛶';
+  ui.staffFull.setAttribute('aria-label', on ? 'Close fullscreen staff' : 'Fullscreen staff');
+  if (on) ui.staffWrap.requestFullscreen?.().catch(() => {});
+  else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  requestAnimationFrame(() => staff?.select(state.index)); // re-centre at the new size
+}
+
+ui.staffFull.addEventListener('click', () => setStaffFullscreen(!staffFullscreen));
+ui.staffPrev.addEventListener('click', () => go(state.index - 1));
+ui.staffNext.addEventListener('click', () => go(state.index + 1));
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && staffFullscreen) setStaffFullscreen(false);
+});
+
 // ---------------------------------------------------------------- keyboard shortcuts
 ui.resetView.addEventListener('click', () => view.resetView());
 window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && staffFullscreen) setStaffFullscreen(false);
   if (e.target instanceof HTMLSelectElement || e.target instanceof HTMLInputElement) return;
   if (e.key === 'r' || e.key === 'R') view.resetView();
   if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { go(state.index + 1); e.preventDefault(); }

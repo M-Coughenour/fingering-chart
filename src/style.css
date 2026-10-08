@@ -61,8 +61,29 @@ button, select, input { font: inherit; color: inherit; }
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 8px var(--panel-w, 380px);
 }
+
+/* Drag bar between the 3D view and the panel. */
+.divider {
+  position: relative;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  cursor: col-resize;
+  touch-action: none;
+}
+.divider::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 3px;
+  height: 36px;
+  border-radius: 2px;
+  background: var(--border);
+  transform: translate(-50%, -50%);
+}
+.divider:hover::after, .divider:focus-visible::after, .divider.dragging::after { background: var(--accent); }
+.divider:focus-visible { outline: none; }
 
 .viewer {
   position: relative;
@@ -156,7 +177,6 @@ button, select, input { font: inherit; color: inherit; }
   padding: 16px;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   background: var(--surface);
-  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -263,6 +283,7 @@ input[type='range'] { width: 100%; accent-color: var(--accent); min-height: 32px
 #keys li.open { background: none; border-style: dashed; border-color: var(--border); color: var(--muted); }
 
 .staff-wrap {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--bg);
@@ -284,11 +305,69 @@ input[type='range'] { width: 100%; accent-color: var(--accent); min-height: 32px
 .staff-note.sel .staff-head { fill: var(--accent); stroke: var(--accent); }
 .staff-note.sel .staff-acc { fill: var(--accent); }
 
+/* Staff header: just the fullscreen button in the corner until fullscreen. */
+.staff-head { position: absolute; top: 4px; right: 4px; z-index: 1; display: flex; align-items: center; gap: 6px; }
+.staff-btn {
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+#staff-prev, #staff-next, .staff-title { display: none; }
+
+.staff-wrap.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--surface);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.staff-wrap.fullscreen .staff-head { position: absolute; top: 12px; left: 12px; right: 12px; justify-content: center; }
+.staff-wrap.fullscreen #staff-prev, .staff-wrap.fullscreen #staff-next { display: block; min-width: 48px; min-height: 48px; font-size: 1.6rem; }
+.staff-wrap.fullscreen .staff-title { display: block; min-width: 9em; text-align: center; font-size: 1.6rem; font-weight: 700; }
+.staff-wrap.fullscreen #staff-full { position: absolute; right: 0; min-width: 48px; min-height: 48px; }
+.staff-wrap.fullscreen .staff-clef, .staff-wrap.fullscreen .staff-notes { height: min(60vh, 520px); width: auto; }
+
+/* Scale key + octave picker under Play scale. */
+.scale-options { display: flex; gap: 8px; align-items: center; margin-top: -4px; }
+.scale-key { flex: 1; min-width: 0; }
+.scale-key select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.octaves { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.octaves button {
+  min-width: 34px;
+  min-height: 40px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+}
+.octaves button[aria-pressed='true'] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.octaves button:disabled { opacity: 0.4; cursor: default; }
+.octaves-label { padding: 0 8px; font-size: 0.8rem; color: var(--muted); }
+.scale-info { margin: -8px 0 0; font-size: 0.8rem; color: var(--muted); min-height: 1em; }
+
 .audio-status { font-size: 0.8rem; color: var(--muted); margin: 0; min-height: 1em; }
 
 @media (max-width: 760px) {
-  .layout { grid-template-columns: 1fr; grid-template-rows: 46vh 1fr; }
-  .panel { border-left: none; border-top: 1px solid var(--border); }
+  .layout { grid-template-columns: 1fr; grid-template-rows: var(--viewer-h, 46vh) 14px 1fr; }
+  .divider { border-left: none; border-top: 1px solid var(--border); cursor: row-resize; }
+  .divider::after { width: 40px; height: 4px; }
   .top h1 { font-size: 0.95rem; }
   .note-name { font-size: 1.8rem; }
 }

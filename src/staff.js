@@ -65,7 +65,9 @@ export function createStaff(container, chart, clef = 'treble', onPick = () => {}
   };
 
   // Fixed clef on the left.
-  const clefSvg = el('svg', { width: CLEF_W, height, class: 'staff-clef', 'aria-hidden': 'true' });
+  const clefSvg = el('svg', {
+    width: CLEF_W, height, viewBox: `0 0 ${CLEF_W} ${height}`, class: 'staff-clef', 'aria-hidden': 'true',
+  });
   staffLines(clefSvg, CLEF_W);
   const spec = CLEF[clef];
   const topLine = yOf(bottom + 8);
@@ -78,7 +80,9 @@ export function createStaff(container, chart, clef = 'treble', onPick = () => {}
 
   // Scrolling notes.
   const width = chart.length * NOTE_W + NOTE_W;
-  const notes = el('svg', { width, height, class: 'staff-notes', role: 'listbox', 'aria-label': 'Notes' });
+  const notes = el('svg', {
+    width, height, viewBox: `0 0 ${width} ${height}`, class: 'staff-notes', role: 'listbox', 'aria-label': 'Notes',
+  });
   staffLines(notes, width);
   const groups = chart.map((entry, i) => {
     const { step, flat } = steps[i];
@@ -116,7 +120,9 @@ export function createStaff(container, chart, clef = 'treble', onPick = () => {}
         g.setAttribute('aria-selected', String(i === index));
       });
       // Scroll only the strip (scrollIntoView would also scroll the panel on phones).
-      scroller.scrollLeft = NOTE_W * (index + 1) - scroller.clientWidth / 2;
+      // The SVG scales up in fullscreen, so measure its rendered size.
+      const zoom = notes.getBoundingClientRect().height / height || 1;
+      scroller.scrollLeft = NOTE_W * (index + 1) * zoom - scroller.clientWidth / 2;
     },
   };
 }

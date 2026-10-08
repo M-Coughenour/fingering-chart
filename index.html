@@ -27,6 +27,9 @@
         <p class="credit" id="credit" hidden></p>
       </section>
 
+      <div class="divider" id="divider" role="separator" aria-orientation="vertical" tabindex="0"
+        aria-label="Resize panel (double-click to reset)" title="Drag to resize · double-click to reset"></div>
+
       <section class="panel">
         <div class="note-card">
           <button class="nav" id="prev" aria-label="Previous note">‹</button>
@@ -45,6 +48,21 @@
           <button id="tuner-toggle" aria-pressed="false" aria-controls="tuner">🎤 Tuner</button>
         </div>
 
+        <div class="scale-options">
+          <label class="scale-key">
+            <span class="sr-only">Scale</span>
+            <select id="scale-key"></select>
+          </label>
+          <div class="octaves" id="octaves" role="group" aria-label="Octaves">
+            <button data-octaves="1" aria-pressed="true">1</button>
+            <button data-octaves="2" aria-pressed="false">2</button>
+            <button data-octaves="3" aria-pressed="false">3</button>
+            <button data-octaves="4" aria-pressed="false">4</button>
+            <span class="octaves-label">oct</span>
+          </div>
+        </div>
+        <p class="scale-info" id="scale-info"></p>
+
         <div class="tuner" id="tuner" hidden>
           <button class="tuner-note" id="tuner-note" title="Show this note's fingering" disabled>–</button>
           <div class="tuner-gauge" aria-hidden="true">
@@ -62,7 +80,13 @@
           <ul id="keys"></ul>
         </div>
 
-        <div class="staff-wrap">
+        <div class="staff-wrap" id="staff-wrap">
+          <div class="staff-head">
+            <button class="staff-btn" id="staff-prev" aria-label="Previous note">‹</button>
+            <span class="staff-title" id="staff-title"></span>
+            <button class="staff-btn" id="staff-next" aria-label="Next note">›</button>
+            <button class="staff-btn" id="staff-full" aria-label="Fullscreen staff" title="Fullscreen">⛶</button>
+          </div>
           <div class="staff" id="staff"></div>
         </div>
 
