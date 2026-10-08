@@ -1,0 +1,4 @@
+node_modules
+dist
+# original downloads; optimized copies live in public/models
+models-src

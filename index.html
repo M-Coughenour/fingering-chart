@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#14161c" />
+    <meta name="description" content="3D fingering chart for brass and woodwind instruments, with sampled audio." />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <title>Fingering Chart 3D</title>
+  </head>
+  <body>
+    <header class="top">
+      <h1>Fingering Chart <span>3D</span></h1>
+      <label class="picker">
+        <span class="sr-only">Instrument</span>
+        <select id="instrument"></select>
+      </label>
+    </header>
+
+    <main class="layout">
+      <section class="viewer" id="viewer" aria-label="3D instrument model">
+        <div class="tooltip" id="tooltip" hidden></div>
+        <div class="loading" id="loading" hidden>Loading…</div>
+        <button class="reset-view" id="reset-view" title="Reset view (R)">⟲ Reset view</button>
+        <p class="hint">Drag to rotate · right-drag or two fingers to move · scroll or pinch to zoom · tap a key for its name</p>
+        <p class="credit" id="credit" hidden></p>
+      </section>
+
+      <section class="panel">
+        <div class="note-card">
+          <button class="nav" id="prev" aria-label="Previous note">‹</button>
+          <div class="note-text">
+            <div class="note-name" id="note-name">–</div>
+            <div class="note-sub" id="note-sub"></div>
+          </div>
+          <button class="nav" id="next" aria-label="Next note">›</button>
+        </div>
+
+        <input type="range" id="range" min="0" max="0" value="0" aria-label="Note" />
+
+        <div class="actions">
+          <button class="primary" id="play" aria-pressed="false">▶ Play</button>
+          <button id="scale">Play scale</button>
+        </div>
+
+        <div class="fingering">
+          <div class="fingering-head">
+            <h2>Press</h2>
+            <button class="link" id="alt" hidden></button>
+          </div>
+          <ul id="keys"></ul>
+        </div>
+
+        <div class="keyboard-wrap">
+          <div class="keyboard" id="keyboard"></div>
+        </div>
+
+        <p class="audio-status" id="audio-status"></p>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
