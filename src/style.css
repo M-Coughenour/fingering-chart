@@ -262,24 +262,27 @@ input[type='range'] { width: 100%; accent-color: var(--accent); min-height: 32px
 }
 #keys li.open { background: none; border-style: dashed; border-color: var(--border); color: var(--muted); }
 
-.keyboard-wrap { overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
-.keyboard { position: relative; height: 110px; }
-.keyboard button {
-  position: absolute;
-  top: 0;
+.staff-wrap {
   border: 1px solid var(--border);
-  border-radius: 0 0 6px 6px;
-  cursor: pointer;
-  padding: 0 0 4px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  font-size: 0.6rem;
+  border-radius: 12px;
+  background: var(--bg);
+  overflow: hidden;
 }
-.keyboard .white { width: 32px; height: 110px; background: #fff; color: #888; }
-.keyboard .black { width: 22px; height: 66px; background: #222; color: #aaa; z-index: 1; border-color: #000; }
-.keyboard .white.sel { background: var(--accent); color: var(--accent-text); }
-.keyboard .black.sel { background: var(--accent); color: var(--accent-text); }
+.staff { display: flex; }
+.staff-clef { flex: none; display: block; }
+.staff-clef text { fill: var(--text); }
+.staff-scroll { flex: 1; min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+.staff-notes { display: block; }
+.staff-line, .staff-ledger { stroke: var(--muted); stroke-width: 1; }
+.staff-ledger { stroke: var(--text); }
+.staff-hit { fill: transparent; }
+.staff-head { fill: none; stroke: var(--text); stroke-width: 1.8; }
+.staff-acc { fill: var(--text); font-size: 15px; }
+.staff-note { cursor: pointer; }
+.staff-note:hover .staff-hit { fill: var(--border); }
+.staff-note.sel .staff-hit { fill: color-mix(in srgb, var(--accent) 18%, transparent); }
+.staff-note.sel .staff-head { fill: var(--accent); stroke: var(--accent); }
+.staff-note.sel .staff-acc { fill: var(--accent); }
 
 .audio-status { font-size: 0.8rem; color: var(--muted); margin: 0; min-height: 1em; }
 

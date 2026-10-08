@@ -4,7 +4,8 @@ import { createScene } from './scene.js';
 import { loadModel } from './models/index.js';
 import { Fingering } from './highlight.js';
 import { loadSample, playNote, stopAll } from './audio.js';
-import { midiToBothNames, isAccidental } from './notes.js';
+import { midiToBothNames } from './notes.js';
+import { createStaff } from './staff.js';
 import { startTuner, stopTuner } from './tuner.js';
 
 const MAP_MODE = new URLSearchParams(location.search).has('map');
@@ -17,7 +18,7 @@ const ui = {
   instrument: $('instrument'), viewer: $('viewer'), tooltip: $('tooltip'), loading: $('loading'),
   noteName: $('note-name'), noteSub: $('note-sub'), prev: $('prev'), next: $('next'),
   range: $('range'), play: $('play'), scale: $('scale'), alt: $('alt'), keys: $('keys'),
-  keyboard: $('keyboard'), audioStatus: $('audio-status'), credit: $('credit'),
+  staff: $('staff'), audioStatus: $('audio-status'), credit: $('credit'),
   resetView: $('reset-view'), tunerToggle: $('tuner-toggle'), tuner: $('tuner'),
   tunerNote: $('tuner-note'), tunerNeedle: $('tuner-needle'), tunerReadout: $('tuner-readout'),
 };
@@ -58,7 +59,7 @@ async function selectInstrument(id, midi) {
   const found = inst.chart.findIndex((e) => e.midi === midi);
   state.index = found >= 0 ? found : Math.floor(inst.chart.length / 2);
   ui.range.max = inst.chart.length - 1;
-  buildKeyboard();
+  buildStaff();
 
   const token = ++loadToken;
   ui.loading.hidden = false;
@@ -126,11 +127,7 @@ function render() {
   if (!current.keys.length && !current.slide) add(inst.family === 'brass' ? 'Open (no valves)' : 'All open', 'open');
 
   state.fingering?.show(current.keys, current.slide);
-  for (const b of ui.keyboard.children) b.classList.toggle('sel', Number(b.dataset.index) === state.index);
-  // Scroll only the keyboard strip (scrollIntoView would also scroll the panel on phones).
-  const sel = ui.keyboard.querySelector('.sel');
-  const strip = ui.keyboard.parentElement;
-  if (sel) strip.scrollLeft = sel.offsetLeft - strip.clientWidth / 2;
+  staff?.select(state.index);
   save();
   syncSustain();
 }
@@ -146,33 +143,13 @@ ui.next.addEventListener('click', () => go(state.index + 1));
 ui.range.addEventListener('input', () => go(Number(ui.range.value)));
 ui.alt.addEventListener('click', () => { state.alt++; render(); });
 
-// ---------------------------------------------------------------- mini keyboard
-function buildKeyboard() {
-  ui.keyboard.replaceChildren();
-  let whiteX = 0;
-  state.inst.chart.forEach((entry, i) => {
-    const b = document.createElement('button');
-    b.dataset.index = i;
-    b.title = midiToBothNames(entry.midi);
-    if (isAccidental(entry.midi)) {
-      b.className = 'black';
-      b.style.left = `${whiteX - 11}px`;
-    } else {
-      b.className = 'white';
-      b.style.left = `${whiteX}px`;
-      if (entry.midi % 12 === 0) b.textContent = midiToBothNames(entry.midi);
-      whiteX += 32;
-    }
-    b.addEventListener('click', () => {
-      go(i);
-      if (!sustain) playCurrent(0.9); // while Play is on, go() already switched the note
-    });
-    ui.keyboard.append(b);
+// ---------------------------------------------------------------- note staff
+let staff = null;
+function buildStaff() {
+  staff = createStaff(ui.staff, state.inst.chart, state.inst.clef ?? 'treble', (i) => {
+    go(i);
+    if (!sustain) playCurrent(0.9); // while Play is on, go() already switched the note
   });
-  // Ranges that start on a black key would push it off the left edge.
-  const shift = isAccidental(state.inst.chart[0].midi) ? 11 : 0;
-  for (const b of ui.keyboard.children) b.style.left = `${parseFloat(b.style.left) + shift}px`;
-  ui.keyboard.style.width = `${whiteX + shift}px`;
 }
 
 // ---------------------------------------------------------------- audio
