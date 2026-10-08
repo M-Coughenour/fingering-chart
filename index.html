@@ -42,6 +42,16 @@
         <div class="actions">
           <button class="primary" id="play" aria-pressed="false">▶ Play</button>
           <button id="scale">Play scale</button>
+          <button id="tuner-toggle" aria-pressed="false" aria-controls="tuner">🎤 Tuner</button>
+        </div>
+
+        <div class="tuner" id="tuner" hidden>
+          <button class="tuner-note" id="tuner-note" title="Show this note's fingering" disabled>–</button>
+          <div class="tuner-gauge" aria-hidden="true">
+            <span class="tuner-scale"><span>♭</span><span>−25</span><span>0</span><span>+25</span><span>♯</span></span>
+            <span class="tuner-track"><span class="tuner-needle" id="tuner-needle"></span></span>
+          </div>
+          <div class="tuner-readout" id="tuner-readout" aria-live="polite">Play a note…</div>
         </div>
 
         <div class="fingering">

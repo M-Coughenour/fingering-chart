@@ -18,7 +18,8 @@ const KIT = {
 const NO_LOOPS = new Set(['french_horn']);
 const RESTRIKE_SECONDS = 2.5;
 
-function ctx() {
+/** The shared AudioContext (playback and the tuner), created on first use. */
+export function ctx() {
   context ??= new AudioContext();
   if (context.state !== 'running') context.resume();
   return context;

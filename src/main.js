@@ -5,6 +5,7 @@ import { loadModel } from './models/index.js';
 import { Fingering } from './highlight.js';
 import { loadSample, playNote, stopAll } from './audio.js';
 import { midiToBothNames, isAccidental } from './notes.js';
+import { startTuner, stopTuner } from './tuner.js';
 
 const MAP_MODE = new URLSearchParams(location.search).has('map');
 const credits = fetch(`${import.meta.env.BASE_URL}models/credits.json`)
@@ -17,7 +18,8 @@ const ui = {
   noteName: $('note-name'), noteSub: $('note-sub'), prev: $('prev'), next: $('next'),
   range: $('range'), play: $('play'), scale: $('scale'), alt: $('alt'), keys: $('keys'),
   keyboard: $('keyboard'), audioStatus: $('audio-status'), credit: $('credit'),
-  resetView: $('reset-view'),
+  resetView: $('reset-view'), tunerToggle: $('tuner-toggle'), tuner: $('tuner'),
+  tunerNote: $('tuner-note'), tunerNeedle: $('tuner-needle'), tunerReadout: $('tuner-readout'),
 };
 
 const state = { inst: null, index: 0, alt: 0, fingering: null, scaleTimer: null };
@@ -254,6 +256,66 @@ ui.scale.addEventListener('click', () => {
     state.scaleTimer = setTimeout(() => { go(state.index + 1); step(); }, 650);
   };
   step();
+});
+
+// ---------------------------------------------------------------- tuner
+// Shows the note being played in the current instrument's written pitch, so it matches
+// the chart. Tapping the note jumps to its fingering.
+let tunerOn = false;
+let heardMidi = null; // written pitch of the last clear reading
+
+function showReading(reading) {
+  if (!reading) {
+    ui.tunerNeedle.classList.add('idle');
+    return;
+  }
+  const { hz, midi, cents } = reading;
+  heardMidi = midi - state.inst.transpose;
+  const off = Math.abs(cents);
+  ui.tunerNote.textContent = midiToBothNames(heardMidi);
+  ui.tunerNote.disabled = false;
+  ui.tunerNeedle.classList.remove('idle');
+  ui.tunerNeedle.style.left = `${50 + cents}%`;
+  ui.tunerNeedle.dataset.tune = off <= 5 ? 'good' : off <= 15 ? 'close' : 'off';
+  const verdict = off <= 5 ? 'In tune' : `${Math.round(off)} cents ${cents > 0 ? 'sharp' : 'flat'}`;
+  ui.tunerReadout.textContent = `${verdict} · ${hz.toFixed(1)} Hz`;
+}
+
+async function setTuner(on) {
+  tunerOn = on;
+  ui.tunerToggle.setAttribute('aria-pressed', String(on));
+  ui.tunerToggle.classList.toggle('active', on);
+  ui.tuner.hidden = !on;
+  if (!on) {
+    stopTuner();
+    return;
+  }
+  // Don't let the app's own sound feed into the microphone.
+  setPlaying(false);
+  stopScale();
+  stopAll();
+  heardMidi = null;
+  ui.tunerNote.textContent = '–';
+  ui.tunerNote.disabled = true;
+  ui.tunerNeedle.classList.add('idle');
+  ui.tunerReadout.textContent = 'Play a note…';
+  try {
+    await startTuner(showReading);
+    if (!tunerOn) stopTuner(); // switched off while the permission prompt was open
+  } catch (err) {
+    setTuner(false);
+    ui.audioStatus.textContent = err?.name === 'NotAllowedError'
+      ? 'Microphone access was blocked — allow it in the browser to use the tuner.'
+      : `Tuner unavailable: ${err?.message ?? err}`;
+  }
+}
+
+ui.tunerToggle.addEventListener('click', () => setTuner(!tunerOn));
+ui.tunerNote.addEventListener('click', () => {
+  if (heardMidi === null) return;
+  const i = state.inst.chart.findIndex((e) => e.midi === heardMidi);
+  if (i >= 0) go(i);
+  else ui.audioStatus.textContent = `${midiToBothNames(heardMidi)} is out of range for ${state.inst.name}.`;
 });
 
 // ---------------------------------------------------------------- keyboard shortcuts

@@ -29,3 +29,10 @@ export function midiToBothNames(midi) {
 export function isAccidental(midi) {
   return [1, 3, 6, 8, 10].includes(((midi % 12) + 12) % 12);
 }
+
+/** Frequency (Hz, A4 = 440) -> nearest MIDI note and how far off it is in cents (-50..50). */
+export function hzToMidi(hz, a4 = 440) {
+  const exact = 69 + 12 * Math.log2(hz / a4);
+  const midi = Math.round(exact);
+  return { midi, cents: (exact - midi) * 100 };
+}

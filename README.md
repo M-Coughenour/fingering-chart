@@ -24,6 +24,18 @@ npm run build          # static site in dist/ (deploy to GitHub Pages, Netlify, 
   **Reset view** (or R) to re-centre. Hover/tap a key to see its name.
 - Blue = press, orange = half-hole.
 
+## Tuner
+
+Tap **🎤 Tuner** and allow the microphone. Play a note: the tuner shows it in the selected
+instrument's written pitch (so it matches the chart), with a needle for how many cents sharp
+or flat you are (green within ±5). Tap the note name to jump to its fingering. Tap **Tuner**
+again to stop listening.
+
+The microphone only works on secure pages: `localhost`, the deployed https site, or the
+installed app. `npm run dev -- --host` serves https for testing on a phone; accept the
+one-time certificate warning there. Phone mics pick up very low notes (tuba, bari sax)
+weakly and may read them an octave high, but the sharp/flat reading is still right.
+
 ## Pitch
 
 Charts show **written** pitch (what's on the player's sheet music). Transposing instruments
