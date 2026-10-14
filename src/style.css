@@ -359,6 +359,23 @@ input[type='range'] { width: 100%; accent-color: var(--accent); min-height: 32px
 }
 .octaves button[aria-pressed='true'] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 .octaves button:disabled { opacity: 0.4; cursor: default; }
+.variant { display: flex; flex-shrink: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.variant[hidden] { display: none; }
+.variant button {
+  min-height: 44px;
+  padding: 0 10px;
+  border: none;
+  background: var(--bg);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.variant button + button { border-left: 1px solid var(--border); }
+/* Phones: make room for the version toggle next to the instrument menu. */
+@media (max-width: 520px) {
+  .top:has(.variant:not([hidden])) h1 { display: none; }
+  .variant button { padding: 0 8px; }
+}
+.variant button[aria-pressed='true'] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 .octaves-label { padding: 0 8px; font-size: 0.8rem; color: var(--muted); }
 .scale-info { margin: -8px 0 0; font-size: 0.8rem; color: var(--muted); min-height: 1em; }
 

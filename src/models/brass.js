@@ -252,8 +252,10 @@ function upright({ height, bellR, bodyR, valves, scale = 1, sideFourth = false }
   return outer;
 }
 
-export const baritone = () => upright({ height: 1.15, bellR: 0.2, bodyR: 0.05, valves: 3 });
+// Marching baritone: trumpet-style wrap with the bell forward.
+export const baritone = () => trumpetLike({ scale: 1.5, bellR: 0.24, bellLen: 0.6, bore: 0.022 });
 export const euphonium = () => upright({ height: 1.2, bellR: 0.26, bodyR: 0.065, valves: 4, sideFourth: true });
+export const euphonium3 = () => upright({ height: 1.2, bellR: 0.26, bodyR: 0.065, valves: 3 });
 export const tuba = () => upright({ height: 1.55, bellR: 0.42, bodyR: 0.12, valves: 4, scale: 1.1 });
 
 // ---------------------------------------------------------------- Sousaphone

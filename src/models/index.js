@@ -4,7 +4,7 @@
 //
 // Real models are described by public/models/<model>.parts.json:
 // {
-//   "transform": { "rotation": [x, y, z] (degrees), "height": 2 },
+//   "transform": { "rotation": [x, y, z] (degrees), "height": 2 },   // or "size": 3 = longest side
 //   "keys": {
 //     "valve1": { "node": "Valve_1_Button", "pressDir": [0, -1, 0], "travel": 0.05 },
 //     "L1":     { "mesh": "Keys", "piece": 12 },              // connected piece of a mesh
@@ -55,14 +55,17 @@ export function addMarker(root, id, point, normal = [0, 0, 1], size = 0.03) {
   return g;
 }
 
-/** Rotate, centre and scale the model to a standard height so the camera framing works. */
-function normalize(scene, { rotation = [0, 0, 0], height = 2 } = {}) {
+/** Rotate, centre and scale the model to a standard height (or longest side, `size`) so the
+ * camera framing works. */
+function normalize(scene, { rotation = [0, 0, 0], height = 2, size: longest } = {}) {
   const inner = new THREE.Group();
   inner.add(scene);
   inner.rotation.set(...rotation.map((d) => THREE.MathUtils.degToRad(d)));
   const box = new THREE.Box3().setFromObject(inner);
   const size = box.getSize(new THREE.Vector3());
-  inner.scale.setScalar(height / Math.max(size.y, 1e-6));
+  inner.scale.setScalar(longest
+    ? longest / Math.max(size.x, size.y, size.z, 1e-6)
+    : height / Math.max(size.y, 1e-6));
   const center = new THREE.Box3().setFromObject(inner).getCenter(new THREE.Vector3());
   inner.position.sub(center);
   const root = new THREE.Group();

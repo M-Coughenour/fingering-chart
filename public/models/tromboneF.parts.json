@@ -1,0 +1,31 @@
+{
+  "transform": {
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "size": 3
+  },
+  "keys": {
+    "trigger": {
+      "node": "trigger",
+      "pressDir": [
+        0,
+        -1,
+        0
+      ],
+      "travel": 0.006
+    },
+    "slide": {
+      "node": "slide",
+      "pressDir": [
+        -1,
+        0,
+        0
+      ],
+      "travel": 0,
+      "positionStep": 0.088
+    }
+  }
+}

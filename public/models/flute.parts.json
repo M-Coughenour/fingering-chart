@@ -1,0 +1,138 @@
+{
+  "transform": {
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "size": 3
+  },
+  "keys": {
+    "thumbBb": {
+      "node": "thumbBb",
+      "pressDir": [
+        -0.0,
+        0.4226,
+        0.9063
+      ],
+      "travel": 0.00166
+    },
+    "thumbB": {
+      "node": "thumbB",
+      "pressDir": [
+        -0.0,
+        0.4226,
+        0.9063
+      ],
+      "travel": 0.00192
+    },
+    "L1": {
+      "node": "L1",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00281
+    },
+    "L2": {
+      "node": "L2",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00281
+    },
+    "L3": {
+      "node": "L3",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00281
+    },
+    "LP_Gs": {
+      "node": "LP_Gs",
+      "pressDir": [
+        0.0,
+        -0.766,
+        -0.6428
+      ],
+      "travel": 0.00166
+    },
+    "R1": {
+      "node": "R1",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00281
+    },
+    "R2": {
+      "node": "R2",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00281
+    },
+    "R3": {
+      "node": "R3",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00281
+    },
+    "trillD": {
+      "node": "trillD",
+      "pressDir": [
+        -0.0,
+        0.5299,
+        -0.848
+      ],
+      "travel": 0.00141
+    },
+    "trillDs": {
+      "node": "trillDs",
+      "pressDir": [
+        -0.0,
+        0.5299,
+        -0.848
+      ],
+      "travel": 0.00141
+    },
+    "RP_Eb": {
+      "node": "RP_Eb",
+      "pressDir": [
+        -0.0,
+        0.7071,
+        -0.7071
+      ],
+      "travel": 0.00166
+    },
+    "RP_Cs": {
+      "node": "RP_Cs",
+      "pressDir": [
+        -0.0,
+        0.5736,
+        -0.8192
+      ],
+      "travel": 0.00166
+    },
+    "RP_C": {
+      "node": "RP_C",
+      "pressDir": [
+        -0.0,
+        0.5736,
+        -0.8192
+      ],
+      "travel": 0.00166
+    }
+  }
+}

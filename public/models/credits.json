@@ -1,8 +1,92 @@
 {
   "altoSax": {
-    "title": "Alto saxophone owned and played by Charlie Parker",
-    "author": "Smithsonian NMAAHC",
-    "license": "CC0",
-    "url": "https://3d.si.edu/object/3d/alto-saxophone-owned-and-played-charlie-parker:c7c58ff8-fd1f-4cf6-9813-6bca3cd0b8b3"
+    "title": "Alto saxophone, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "trumpet": {
+    "title": "B♭ trumpet, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "flute": {
+    "title": "Flute, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "oboe": {
+    "title": "Oboe, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "bassoon": {
+    "title": "Bassoon, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "clarinet": {
+    "title": "B♭ clarinet, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "bassClarinet": {
+    "title": "Bass clarinet, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "tenorSax": {
+    "title": "Tenor saxophone, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "bariSax": {
+    "title": "Baritone saxophone, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "mellophone": {
+    "title": "Mellophone, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "frenchHorn": {
+    "title": "Double French horn, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "trombone": {
+    "title": "Tenor trombone, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "tromboneF": {
+    "title": "Trombone with F attachment, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "baritone": {
+    "title": "Marching baritone, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "euphonium": {
+    "title": "Euphonium (4 valves), modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "tuba": {
+    "title": "BB♭ tuba, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "sousaphone": {
+    "title": "Sousaphone, modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "euphonium3": {
+    "title": "Euphonium (3 valves), modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
   }
 }

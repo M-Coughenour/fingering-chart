@@ -9,8 +9,15 @@ const keysOf = (inst, midi) => {
   return e;
 };
 
-test('all 17 instruments are present', () => {
-  assert.equal(INSTRUMENTS.length, 17);
+test('all 17 instruments are in the menu', () => {
+  assert.equal(INSTRUMENTS.filter((i) => !i.variantOf).length, 17);
+});
+
+test('variants belong to a menu instrument that is also a variant', () => {
+  for (const inst of INSTRUMENTS.filter((i) => i.variantOf)) {
+    const base = INSTRUMENTS.find((i) => i.id === inst.variantOf);
+    assert.ok(base?.variant && inst.variant, `${inst.id}: bad variant setup`);
+  }
 });
 
 for (const inst of INSTRUMENTS) {

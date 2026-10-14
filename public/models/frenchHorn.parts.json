@@ -1,0 +1,48 @@
+{
+  "transform": {
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "size": 3
+  },
+  "keys": {
+    "valve1": {
+      "node": "valve1",
+      "pressDir": [
+        0,
+        -1,
+        0
+      ],
+      "travel": 0.006
+    },
+    "valve2": {
+      "node": "valve2",
+      "pressDir": [
+        0,
+        -1,
+        0
+      ],
+      "travel": 0.006
+    },
+    "valve3": {
+      "node": "valve3",
+      "pressDir": [
+        0,
+        -1,
+        0
+      ],
+      "travel": 0.006
+    },
+    "trigger": {
+      "node": "trigger",
+      "pressDir": [
+        0,
+        -1,
+        0
+      ],
+      "travel": 0.006
+    }
+  }
+}

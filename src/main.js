@@ -1,5 +1,5 @@
 import './style.css';
-import { INSTRUMENTS, getInstrument } from './data/instruments.js';
+import { INSTRUMENTS, getInstrument, baseOf, variantsOf } from './data/instruments.js';
 import { createScene } from './scene.js';
 import { loadModel } from './models/index.js';
 import { Fingering } from './highlight.js';
@@ -16,7 +16,7 @@ const credits = fetch(`${import.meta.env.BASE_URL}models/credits.json`)
 
 const $ = (id) => document.getElementById(id);
 const ui = {
-  instrument: $('instrument'), viewer: $('viewer'), tooltip: $('tooltip'), loading: $('loading'),
+  instrument: $('instrument'), variant: $('variant'), viewer: $('viewer'), tooltip: $('tooltip'), loading: $('loading'),
   noteName: $('note-name'), noteSub: $('note-sub'), prev: $('prev'), next: $('next'),
   range: $('range'), play: $('play'), scale: $('scale'), alt: $('alt'), keys: $('keys'),
   staff: $('staff'), audioStatus: $('audio-status'), credit: $('credit'),
@@ -35,8 +35,10 @@ view.onFrame.add((dt, t) => state.fingering?.update(dt, t));
 const saved = (() => {
   try { return JSON.parse(localStorage.getItem('fingering-chart') ?? '{}'); } catch { return {}; }
 })();
-// Layout and scale choices: { panelW, viewerH, scaleKey, octaves }.
+// Layout and scale choices: { panelW, viewerH, scaleKey, octaves, variants }.
+// `variants` remembers the last version picked per instrument (menu id -> instrument id).
 const prefs = { scaleKey: 'chromatic', octaves: 1, ...saved.prefs };
+prefs.variants = { ...prefs.variants };
 function save() {
   try {
     localStorage.setItem('fingering-chart', JSON.stringify({
@@ -49,19 +51,39 @@ function save() {
 for (const [family, label] of [['woodwind', 'Woodwinds'], ['brass', 'Brass']]) {
   const group = document.createElement('optgroup');
   group.label = label;
-  for (const inst of INSTRUMENTS.filter((i) => i.family === family)) {
+  for (const inst of INSTRUMENTS.filter((i) => i.family === family && !i.variantOf)) {
     group.append(new Option(inst.name, inst.id));
   }
   ui.instrument.append(group);
 }
-ui.instrument.addEventListener('change', () => selectInstrument(ui.instrument.value));
+ui.instrument.addEventListener('change', () => {
+  // Reopen the version used last, if it's still a version of this instrument.
+  const last = INSTRUMENTS.find((i) => i.id === prefs.variants[ui.instrument.value]);
+  selectInstrument(last && baseOf(last) === ui.instrument.value ? last.id : ui.instrument.value);
+});
+
+/** Version toggle (e.g. 3 / 4 valves) for instruments that come in more than one build. */
+function syncVariants(inst) {
+  const variants = variantsOf(inst);
+  ui.variant.hidden = variants.length < 2;
+  ui.variant.replaceChildren(...variants.map((v) => {
+    const b = document.createElement('button');
+    b.textContent = v.variant;
+    b.setAttribute('aria-pressed', String(v.id === inst.id));
+    // Keep the same written note when switching, if the other version can play it.
+    b.addEventListener('click', () => v.id !== state.inst.id && selectInstrument(v.id, currentEntry().midi));
+    return b;
+  }));
+}
 
 let loadToken = 0;
 async function selectInstrument(id, midi) {
   stopScale();
   const inst = getInstrument(id);
   state.inst = inst;
-  ui.instrument.value = inst.id;
+  ui.instrument.value = baseOf(inst);
+  if (inst.variant) prefs.variants[baseOf(inst)] = inst.id;
+  syncVariants(inst);
   const found = inst.chart.findIndex((e) => e.midi === midi);
   state.index = found >= 0 ? found : Math.floor(inst.chart.length / 2);
   ui.range.max = inst.chart.length - 1;
@@ -88,7 +110,9 @@ async function showCredit(model, source) {
   if (!c) return;
   ui.credit.replaceChildren(
     'Model: ',
-    Object.assign(document.createElement('a'), { href: c.url, target: '_blank', rel: 'noopener', textContent: c.title }),
+    c.url
+      ? Object.assign(document.createElement('a'), { href: c.url, target: '_blank', rel: 'noopener', textContent: c.title })
+      : c.title,
     ` by ${c.author} (${c.license})`,
   );
 }

@@ -1,0 +1,22 @@
+{
+  "transform": {
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "size": 3
+  },
+  "keys": {
+    "slide": {
+      "node": "slide",
+      "pressDir": [
+        -1,
+        0,
+        0
+      ],
+      "travel": 0,
+      "positionStep": 0.088
+    }
+  }
+}

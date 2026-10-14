@@ -19,6 +19,9 @@ export class Fingering {
       this.parts.set(o.name, o);
       o.userData.rest ??= o.position.clone();
       o.userData.target ??= o.position.clone();
+      // Optimized models keep a dequantization scale on their nodes, so grow relative to it.
+      o.userData.restScale ??= o.scale.clone();
+      o.userData.grow ??= 1;
     });
   }
 
@@ -58,8 +61,9 @@ export class Fingering {
     const k = 1 - Math.exp(-dt * 14);
     for (const part of this.parts.values()) {
       part.position.lerp(part.userData.target, k);
-      const s = part.scale.x + ((part.userData.targetScale ?? 1) - part.scale.x) * k;
-      part.scale.setScalar(s);
+      const { userData: u } = part;
+      u.grow += ((u.targetScale ?? 1) - u.grow) * k;
+      part.scale.copy(u.restScale).multiplyScalar(u.grow);
     }
     const pulse = 0.55 + 0.35 * Math.sin(time * 4);
     PRESSED.emissiveIntensity = pulse;

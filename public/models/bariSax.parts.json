@@ -1,0 +1,219 @@
+{
+  "transform": {
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "size": 3
+  },
+  "keys": {
+    "octave": {
+      "node": "octave",
+      "pressDir": [
+        -0.5,
+        0.0,
+        0.866
+      ],
+      "travel": 0.00332
+    },
+    "palmF": {
+      "node": "palmF",
+      "pressDir": [
+        0.9397,
+        0.0,
+        -0.342
+      ],
+      "travel": 0.00312
+    },
+    "palmEb": {
+      "node": "palmEb",
+      "pressDir": [
+        0.9781,
+        0.0,
+        -0.2079
+      ],
+      "travel": 0.00312
+    },
+    "palmD": {
+      "node": "palmD",
+      "pressDir": [
+        0.9976,
+        0.0,
+        -0.0698
+      ],
+      "travel": 0.00312
+    },
+    "frontF": {
+      "node": "frontF",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00234
+    },
+    "L1": {
+      "node": "L1",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00332
+    },
+    "bis": {
+      "node": "bis",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00156
+    },
+    "L2": {
+      "node": "L2",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00352
+    },
+    "L3": {
+      "node": "L3",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00371
+    },
+    "LP_Gs": {
+      "node": "LP_Gs",
+      "pressDir": [
+        0.7071,
+        0.0,
+        -0.7071
+      ],
+      "travel": 0.00312
+    },
+    "LP_Cs": {
+      "node": "LP_Cs",
+      "pressDir": [
+        0.7071,
+        0.0,
+        -0.7071
+      ],
+      "travel": 0.00312
+    },
+    "LP_B": {
+      "node": "LP_B",
+      "pressDir": [
+        0.7071,
+        0.0,
+        -0.7071
+      ],
+      "travel": 0.00312
+    },
+    "LP_Bb": {
+      "node": "LP_Bb",
+      "pressDir": [
+        0.7071,
+        0.0,
+        -0.7071
+      ],
+      "travel": 0.00312
+    },
+    "highFs": {
+      "node": "highFs",
+      "pressDir": [
+        -0.9397,
+        0.0,
+        -0.342
+      ],
+      "travel": 0.00254
+    },
+    "sideE": {
+      "node": "sideE",
+      "pressDir": [
+        -0.9397,
+        0.0,
+        -0.342
+      ],
+      "travel": 0.00273
+    },
+    "sideC": {
+      "node": "sideC",
+      "pressDir": [
+        -0.9397,
+        0.0,
+        -0.342
+      ],
+      "travel": 0.00273
+    },
+    "sideBb": {
+      "node": "sideBb",
+      "pressDir": [
+        -0.9397,
+        0.0,
+        -0.342
+      ],
+      "travel": 0.00273
+    },
+    "R1": {
+      "node": "R1",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.0041
+    },
+    "R2": {
+      "node": "R2",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.0043
+    },
+    "R3": {
+      "node": "R3",
+      "pressDir": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "travel": 0.00449
+    },
+    "RP_Eb": {
+      "node": "RP_Eb",
+      "pressDir": [
+        -0.6428,
+        0.0,
+        -0.766
+      ],
+      "travel": 0.00312
+    },
+    "RP_C": {
+      "node": "RP_C",
+      "pressDir": [
+        -0.6428,
+        0.0,
+        -0.766
+      ],
+      "travel": 0.00312
+    },
+    "lowA": {
+      "node": "lowA",
+      "pressDir": [
+        -0.5,
+        0.0,
+        0.866
+      ],
+      "travel": 0.00312
+    }
+  }
+}

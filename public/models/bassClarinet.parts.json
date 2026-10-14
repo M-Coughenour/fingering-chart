@@ -1,0 +1,228 @@
+{
+  "transform": {
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "size": 3
+  },
+  "keys": {
+    "register": {
+      "node": "register",
+      "pressDir": [
+        -0.5,
+        -0.0,
+        0.866
+      ],
+      "travel": 0.00273
+    },
+    "thumb": {
+      "node": "thumb",
+      "pressDir": [
+        -0.342,
+        -0.0,
+        0.9397
+      ],
+      "travel": 0.00304
+    },
+    "aKey": {
+      "node": "aKey",
+      "pressDir": [
+        -0.0,
+        -0.0,
+        -1.0
+      ],
+      "travel": 0.00258
+    },
+    "gsKey": {
+      "node": "gsKey",
+      "pressDir": [
+        0.6428,
+        -0.0,
+        -0.766
+      ],
+      "travel": 0.00228
+    },
+    "L1": {
+      "node": "L1",
+      "pressDir": [
+        -0.0,
+        -0.0,
+        -1.0
+      ],
+      "travel": 0.00319
+    },
+    "sliver": {
+      "node": "sliver",
+      "pressDir": [
+        -0.6157,
+        -0.0,
+        -0.788
+      ],
+      "travel": 0.00182
+    },
+    "L2": {
+      "node": "L2",
+      "pressDir": [
+        -0.0,
+        -0.0,
+        -1.0
+      ],
+      "travel": 0.00319
+    },
+    "L3": {
+      "node": "L3",
+      "pressDir": [
+        -0.0,
+        -0.0,
+        -1.0
+      ],
+      "travel": 0.00319
+    },
+    "LP_E": {
+      "node": "LP_E",
+      "pressDir": [
+        0.7431,
+        -0.0,
+        -0.6691
+      ],
+      "travel": 0.00213
+    },
+    "LP_F": {
+      "node": "LP_F",
+      "pressDir": [
+        0.7431,
+        -0.0,
+        -0.6691
+      ],
+      "travel": 0.00213
+    },
+    "LP_Fs": {
+      "node": "LP_Fs",
+      "pressDir": [
+        0.7431,
+        -0.0,
+        -0.6691
+      ],
+      "travel": 0.00213
+    },
+    "LP_Gs": {
+      "node": "LP_Gs",
+      "pressDir": [
+        0.7431,
+        -0.0,
+        -0.6691
+      ],
+      "travel": 0.00213
+    },
+    "LP_Cs": {
+      "node": "LP_Cs",
+      "pressDir": [
+        0.7431,
+        -0.0,
+        -0.6691
+      ],
+      "travel": 0.00213
+    },
+    "side3": {
+      "node": "side3",
+      "pressDir": [
+        -0.9397,
+        -0.0,
+        -0.342
+      ],
+      "travel": 0.00182
+    },
+    "side4": {
+      "node": "side4",
+      "pressDir": [
+        -0.9397,
+        -0.0,
+        -0.342
+      ],
+      "travel": 0.00182
+    },
+    "R1": {
+      "node": "R1",
+      "pressDir": [
+        -0.0,
+        -0.0,
+        -1.0
+      ],
+      "travel": 0.00319
+    },
+    "R2": {
+      "node": "R2",
+      "pressDir": [
+        -0.0,
+        -0.0,
+        -1.0
+      ],
+      "travel": 0.00319
+    },
+    "RS_B": {
+      "node": "RS_B",
+      "pressDir": [
+        -0.5878,
+        -0.0,
+        -0.809
+      ],
+      "travel": 0.00167
+    },
+    "R3": {
+      "node": "R3",
+      "pressDir": [
+        -0.0,
+        -0.0,
+        -1.0
+      ],
+      "travel": 0.00319
+    },
+    "RP_E": {
+      "node": "RP_E",
+      "pressDir": [
+        -0.6691,
+        -0.0,
+        -0.7431
+      ],
+      "travel": 0.00213
+    },
+    "RP_F": {
+      "node": "RP_F",
+      "pressDir": [
+        -0.6691,
+        -0.0,
+        -0.7431
+      ],
+      "travel": 0.00213
+    },
+    "RP_Fs": {
+      "node": "RP_Fs",
+      "pressDir": [
+        -0.6691,
+        -0.0,
+        -0.7431
+      ],
+      "travel": 0.00213
+    },
+    "RP_Gs": {
+      "node": "RP_Gs",
+      "pressDir": [
+        -0.6691,
+        -0.0,
+        -0.7431
+      ],
+      "travel": 0.00213
+    },
+    "lowEb": {
+      "node": "lowEb",
+      "pressDir": [
+        0.6428,
+        -0.0,
+        -0.766
+      ],
+      "travel": 0.00217
+    }
+  }
+}
