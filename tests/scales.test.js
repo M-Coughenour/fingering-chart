@@ -42,3 +42,34 @@ test('every key works on every instrument', async () => {
     }
   }
 });
+
+test('arpeggio: concert B♭ on trumpet is written C E G C G E C', () => {
+  const tpt = getInstrument('trumpet');
+  const seq = scaleSequence(tpt.chart, tpt.transpose, pc('B♭'), 1, { arpeggio: true });
+  const C4 = noteToMidi('C4');
+  assert.deepEqual(notes(tpt, seq), [0, 4, 7, 12, 7, 4, 0].map((s) => C4 + s));
+});
+
+test('two-octave arpeggio has 1-3-5 in each octave', () => {
+  const flute = getInstrument('flute');
+  const seq = scaleSequence(flute.chart, flute.transpose, pc('C'), 2, { arpeggio: true });
+  const C4 = noteToMidi('C4');
+  assert.equal(seq.octaves, 2);
+  assert.deepEqual(notes(flute, seq).slice(0, 7), [0, 4, 7, 12, 16, 19, 24].map((s) => C4 + s));
+  assert.equal(seq.indices.length, 13);
+});
+
+test('arpeggio octaves are clamped to the range', () => {
+  const flute = getInstrument('flute');
+  const seq = scaleSequence(flute.chart, flute.transpose, pc('C'), 4, { arpeggio: true });
+  assert.equal(seq.octaves, 3);
+});
+
+test('scale notes are spelled in the key', () => {
+  const flute = getInstrument('flute');
+  const letters = (key) => scaleSequence(flute.chart, flute.transpose, pc(key), 1).letters.slice(0, 8);
+  // D major: D E F♯ G A B C♯ D — one note per letter.
+  assert.deepEqual(letters('D'), [1, 2, 3, 4, 5, 6, 0, 1]);
+  // G♭ major uses C♭, not B.
+  assert.deepEqual(letters('G♭'), [4, 5, 6, 0, 1, 2, 3, 4]);
+});

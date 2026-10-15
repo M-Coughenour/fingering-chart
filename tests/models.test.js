@@ -27,3 +27,14 @@ for (const file of files.filter((f) => f.endsWith('.parts.json'))) {
     });
   }
 }
+
+// The Blender exports are build inputs; skip when they haven't been built on this machine.
+const { findIslands, modelFiles } = await import('../scripts/check-models.mjs').catch(() => ({}));
+let sources = [];
+try { sources = modelFiles(); } catch { /* models-src/blender not built */ }
+for (const file of sources) {
+  test(`${file.split('/').pop()}: no floating pieces`, { timeout: 120000 }, async () => {
+    const [, ...strays] = await findIslands(file);
+    assert.deepEqual(strays, [], 'pieces that don\'t touch the rest of the instrument');
+  });
+}

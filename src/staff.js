@@ -7,9 +7,11 @@ const STEP = GAP / 2; // one diatonic step (line to space)
 const NOTE_W = 30; // horizontal room per note
 const CLEF_W = 44;
 
-// Pitch class -> [letter index C=0..B=6, flat?]. Flats read most naturally for band
-// instruments (B♭, E♭...).
-const SPELLING = [[0, 0], [1, 1], [1, 0], [2, 1], [2, 0], [3, 0], [4, 1], [4, 0], [5, 1], [5, 0], [6, 1], [6, 0]];
+// Pitch class -> letter index C=0..B=6. Flats read most naturally for band instruments
+// (B♭, E♭...), so this is the spelling when no key is given.
+const FLAT_LETTER = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
+const NATURAL_PC = [0, 2, 4, 5, 7, 9, 11];
+const ACC_GLYPH = { '-1': '♭', 1: '♯' };
 // Diatonic step of the bottom staff line: E4 in treble clef, G2 in bass clef.
 const BOTTOM_LINE = { treble: 2 + 7 * 4, bass: 4 + 7 * 2 };
 // Clef glyphs and where their ink should sit, in staff spaces from the top line (+ = down).
@@ -31,10 +33,15 @@ function fitGlyph(glyph, height) {
   return { size: probe * scale, ascent: (m.actualBoundingBoxAscent || probe * 0.8) * scale };
 }
 
-/** Diatonic step (letter + 7 × octave) and whether the note needs a flat. */
-export function staffStep(midi) {
-  const [letter, flat] = SPELLING[((midi % 12) + 12) % 12];
-  return { step: letter + 7 * (Math.floor(midi / 12) - 1), flat: Boolean(flat) };
+/**
+ * Diatonic step (letter + 7 × octave) and accidental (-1 flat, 0, 1 sharp) for `midi`
+ * spelled with `letter` (C=0..B=6), or with flats when no letter is given.
+ */
+export function staffStep(midi, letter = FLAT_LETTER[((midi % 12) + 12) % 12]) {
+  const acc = ((midi - NATURAL_PC[letter]) % 12 + 18) % 12 - 6;
+  // The octave of the letter itself, so C♭ sits with the C above B and B♯ with the B below C.
+  const octave = (midi - acc - NATURAL_PC[letter]) / 12 - 1;
+  return { step: letter + 7 * octave, acc };
 }
 
 const el = (name, attrs = {}) => {
@@ -44,13 +51,14 @@ const el = (name, attrs = {}) => {
 };
 
 /**
- * Draw the staff into `container` for `chart` (sorted chart entries) in `clef`
- * ('treble' | 'bass'). `onPick(index)` fires when a note is tapped.
- * Returns { select(index) } to highlight and scroll to a note.
+ * Draw the staff into `container` for `items` ([{ index, midi, letter? }], where index is the
+ * chart index and letter the spelling) in `clef` ('treble' | 'bass').
+ * `onPick(index, pos)` fires when the note at staff position `pos` is tapped.
+ * Returns { select(index, pos?) } to highlight and scroll to a note, and `length`.
  */
-export function createStaff(container, chart, clef = 'treble', onPick = () => {}) {
+export function createStaff(container, items, clef = 'treble', onPick = () => {}) {
   const bottom = BOTTOM_LINE[clef];
-  const steps = chart.map((e) => staffStep(e.midi));
+  const steps = items.map((e) => staffStep(e.midi, e.letter));
   // Room above and below the staff for the highest/lowest notes and their ledger lines.
   const above = Math.max(8, ...steps.map((s) => s.step - bottom)) - 8;
   const below = Math.max(0, ...steps.map((s) => bottom - s.step));
@@ -79,13 +87,13 @@ export function createStaff(container, chart, clef = 'treble', onPick = () => {}
   clefSvg.append(clefText);
 
   // Scrolling notes.
-  const width = chart.length * NOTE_W + NOTE_W;
+  const width = items.length * NOTE_W + NOTE_W;
   const notes = el('svg', {
     width, height, viewBox: `0 0 ${width} ${height}`, class: 'staff-notes', role: 'listbox', 'aria-label': 'Notes',
   });
   staffLines(notes, width);
-  const groups = chart.map((entry, i) => {
-    const { step, flat } = steps[i];
+  const groups = items.map((item, i) => {
+    const { step, acc } = steps[i];
     const x = NOTE_W * (i + 1);
     const y = yOf(step);
     const g = el('g', { class: 'staff-note', role: 'option', tabindex: -1, 'data-index': i });
@@ -98,12 +106,12 @@ export function createStaff(container, chart, clef = 'treble', onPick = () => {}
       g.append(el('line', { x1: x - 10, x2: x + 10, y1: yOf(s), y2: yOf(s), class: 'staff-ledger' }));
     }
     g.append(el('ellipse', { cx: x, cy: y, rx: 6.4, ry: 4.6, transform: `rotate(-20 ${x} ${y})`, class: 'staff-head' }));
-    if (flat) {
-      const acc = el('text', { x: x - 15, y: y + 4, class: 'staff-acc' });
-      acc.textContent = '♭';
-      g.append(acc);
+    if (acc) {
+      const sign = el('text', { x: x - 15, y: y + 4, class: 'staff-acc' });
+      sign.textContent = ACC_GLYPH[acc];
+      g.append(sign);
     }
-    g.addEventListener('click', () => onPick(i));
+    g.addEventListener('click', () => onPick(item.index, i));
     notes.append(g);
     return g;
   });
@@ -113,16 +121,23 @@ export function createStaff(container, chart, clef = 'treble', onPick = () => {}
   scroller.append(notes);
   container.replaceChildren(clefSvg, scroller);
 
+  let current = -1;
   return {
-    select(index) {
+    length: items.length,
+    /** Staff position shown as selected, or -1. */
+    get position() { return current; },
+    /** Highlight chart note `index`: at position `pos` if it's there, else its first position. */
+    select(index, pos = current) {
+      current = items[pos]?.index === index ? pos : items.findIndex((it) => it.index === index);
       groups.forEach((g, i) => {
-        g.classList.toggle('sel', i === index);
-        g.setAttribute('aria-selected', String(i === index));
+        g.classList.toggle('sel', i === current);
+        g.setAttribute('aria-selected', String(i === current));
       });
+      if (current < 0) return; // not on this staff (e.g. outside the scale)
       // Scroll only the strip (scrollIntoView would also scroll the panel on phones).
       // The SVG scales up in fullscreen, so measure its rendered size.
       const zoom = notes.getBoundingClientRect().height / height || 1;
-      scroller.scrollLeft = NOTE_W * (index + 1) * zoom - scroller.clientWidth / 2;
+      scroller.scrollLeft = NOTE_W * (current + 1) * zoom - scroller.clientWidth / 2;
     },
   };
 }

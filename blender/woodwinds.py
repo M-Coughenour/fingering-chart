@@ -26,8 +26,12 @@ def box(part, center, size, mat, matrix=Matrix()):
 class Body:
     """A woodwind tube: `radius(z)`, plus the mapping from the JS layout's y to real z."""
 
-    def __init__(self, part, radius, y_to_z, k, center=(0, 0), metal=None):
+    def __init__(self, part, radius, y_to_z, k, center=(0, 0), metal=None, key_lift=0.004, chimneys=False):
         self.part = part
+        # How high key cups sit above the body (layout units, scaled by k), and whether the
+        # big cups sit on raised tone-hole rims (saxophones).
+        self.key_lift = key_lift
+        self.chimneys = chimneys
         self.radius = radius
         self.y_to_z = y_to_z
         self.k = k
@@ -84,6 +88,10 @@ def key_geometry(part, kind, s, m, M, metal):
                  metal, segs=12)
 
 
+# How far each cup reaches from its centre, in units of the key size (see key_geometry).
+KEY_REACH = {'hole': 0.96, 'plate': 1.08, 'flute': 1.08, 'pearl': 1.55}
+
+
 def place_key(body, M, spec, closed=False):
     """A key from a JS-layout spec. Pressable keys become their own Part; decorative cups
     (closed=True) go into the body."""
@@ -91,7 +99,9 @@ def place_key(body, M, spec, closed=False):
     s = spec.get('size', 0.03) * body.k
     z = body.y_to_z(spec['y'])
     angle = spec.get('angle', 0)
-    lift = spec.get('lift', 0.004) * body.k
+    lift = spec.get('lift', body.key_lift) * body.k
+    # A pressed key moves in by `travel`; keep that inside the gap so it never sinks into the body.
+    travel = min(0.0035, s * 0.35, lift * 0.8)
     m = body.frame(angle, z, lift)
     if kind == 'hole':
         # Open tone hole in the body under the ring.
@@ -101,7 +111,11 @@ def place_key(body, M, spec, closed=False):
     key_id = spec.get('id')
     part = body.part if closed or not key_id else Part(
         key_id, origin=m @ Vector((0, 0, 0)),
-        key={'id': key_id, 'press': -outward(angle), 'travel': min(0.0035, s * 0.35)})
+        key={'id': key_id, 'press': -outward(angle), 'travel': travel})
+    if body.chimneys and kind in ('pearl', 'plate'):
+        # Raised tone-hole rim: the pad lands on it when the key is pressed.
+        rim = body.surface(angle, z, -0.001)
+        cylinder(body.part, rim, outward(angle), lift - travel + 0.001 - 0.0002, s * 1.15, body.metal, segs=40)
     key_geometry(part, kind, s, m, M, body.metal)
     # Arm back to the nearest rod alongside, if one runs past this height.
     near = [r for r in body.rods if r['z0'] - 0.01 <= z <= r['z1'] + 0.01 and 4 < abs(r['angle'] - angle) < 75]
@@ -110,6 +124,17 @@ def place_key(body, M, spec, closed=False):
         a = m @ Vector((0, 0, s * 0.3))
         b = body.surface(rod['angle'], z, rod['offset'])
         tube(part, [a, b], max(0.0007, s * 0.1), body.metal, segs=10, caps=True)
+    elif kind in ('lever', 'small'):
+        # No rod alongside: run the key's stem down into the body.
+        cylinder(part, body.surface(angle, z, -0.001), outward(angle), lift + 0.001, s * 0.14, body.metal, segs=12)
+    else:
+        # No rod alongside: a post beside the cup holds its arm.
+        hz = z + s * (KEY_REACH[kind] + 0.35)
+        r = max(0.0008, s * 0.12)
+        base = body.surface(angle, hz, -0.001)
+        top = body.surface(angle, hz, lift + s * 0.3)
+        cylinder(body.part, base, top - base, (top - base).length, r, body.metal, segs=12)
+        tube(part, [top, m @ Vector((0, 0, s * 0.3))], r * 0.8, body.metal, segs=10, caps=True)
     return part
 
 
@@ -242,7 +267,7 @@ def double_reed(part, M, base, direction, r):
     """Cork, wound thread and the two cane blades (oboe / bassoon reeds use different r)."""
     d = Vector(direction).normalized()
     m = axis_matrix(base, d)
-    lathe(part, [(r * 0.55, 0), (r * 0.6, r * 1.2), (r * 0.52, r * 1.35)], M['cork'], m, segs=24)
+    lathe(part, [(0, 0), (r * 0.55, 0), (r * 0.6, r * 1.2), (r * 0.52, r * 1.35)], M['cork'], m, segs=24)
     lathe(part, [(r * 0.5, r * 1.3), (r * 0.48, r * 2.6), (r * 0.36, r * 2.8)], M['thread'], m, segs=24)
     lathe(part, [(r * 0.34, r * 2.75), (r * 0.42, r * 3.6), (r * 0.5, r * 4.3), (r * 0.18, r * 4.45), (0, r * 4.45)],
           M['reed'], m @ Matrix.Diagonal((1, 0.32, 1, 1)), segs=24)
@@ -475,9 +500,11 @@ def bassoon(M):
     # Bocal: silver S-curve from the wing joint to the reed, with the whisper-key nub.
     bocal = [(0, 0, za1 - 0.01), (0, 0, za1 + 0.07), (-0.01, 0.04, za1 + 0.13), (-0.02, 0.15, za1 + 0.14)]
     tube(part, bocal, (0.0045, 0.0028), M['silver'], bend=[0.06, 0.05], segs=24)
-    double_reed(part, M, Vector((-0.02, 0.148, za1 + 0.14)), (-0.05, 1, -0.1), 0.0085)
+    cylinder(part, (0, 0, za1 - 0.002), (0, 0, 1), 0.008, 0.0075, M['silver'], segs=32)  # tenon collar
+    reed_dir = Vector((-0.05, 1, -0.1)).normalized()
+    double_reed(part, M, Vector(bocal[-1]) - reed_dir * 0.006, reed_dir, 0.0085)
     # Hand rest (crutch) on the boot.
-    tube(part, [(-0.01, -0.02, to_z(-0.45)), (-0.045, -0.04, to_z(-0.43))], 0.0022, M['nickel'], segs=12)
+    tube(part, [(-0.006, -0.012, to_z(-0.45)), (-0.045, -0.04, to_z(-0.43))], 0.0022, M['nickel'], segs=12)
     lathe(part, [(0, -0.02), (0.012, -0.018), (0.014, 0.0), (0.012, 0.018), (0, 0.02)], M['ebonite'],
           axis_matrix((-0.05, -0.042, to_z(-0.43)), (0.3, -1, 0)) @ Matrix.Diagonal((1, 1.6, 0.6, 1)), segs=24)
 
@@ -563,8 +590,13 @@ def sax(M, scale=1.0, low_a=False, pigtail=False):
     ring_band(part, B, (0, 0), z0 + 0.03, radius(z0 + 0.03) + 0.0015, 0.004)
     bell_dir = Vector((0.1, -0.06, 1)).normalized()
     bell_at = add_bell(part, B, (bell_x, 0, 0.129), bell_dir, 0.24, r_bot * 1.12, 0.064, gamma=1.5, segs=96)
-    torus(part, (bell_x / 2, 0, 0.055 - r_bot * 0.6), (0, 1, 0), bell_x / 2 + 0.01, 0.003, B, segs=40,
-          minor_segs=8, arc=math.pi)  # bow guard (lower half)
+    # Bow guard: a rod under the bow (roughly a half circle), on three braces.
+    bow_c, bow_r = Vector((bell_x * 0.525, 0, 0.1)), bell_x * 0.475
+    guard_r = bow_r + r_bot * 1.06 + 0.006
+    torus(part, bow_c, (0, 1, 0), guard_r, 0.003, B, segs=40, minor_segs=8, arc=math.pi)
+    for deg in (200, 270, 340):
+        d = Vector((math.cos(math.radians(deg)), 0, math.sin(math.radians(deg))))
+        brace(part, B, bow_c + d * guard_r, bow_c + d * bow_r, 0.002)
     brace(part, B, (radius(0.3) * 0.9, 0, 0.3), (bell_x - bell_at(0.3 - 0.129) * 0.95 + 0.01, 0, 0.3), 0.003)
     # Low B / B♭ pad cups on the bell's back.
     for zz, a in ((0.2, 200), (0.27, 215)):
@@ -588,12 +620,12 @@ def sax(M, scale=1.0, low_a=False, pigtail=False):
                T + Vector((-0.11, 0.11, 0.095))]
         tube(part, pts, (r_top, r_top * 0.62), B, bend=[0.02, 0.04, 0.05], segs=40)
         neck_end, neck_dir = pts[-1], (pts[-1] - pts[-2]).normalized()
-    cylinder(part, T + Vector((0, 0, 0.004)), (0, 0, 1), 0.012, r_top + 0.0018, B, segs=48, bevel=0.0008)
+    cylinder(part, T + Vector((0, 0, 0.004)), (0, 0, 1), 0.012, r_top + 0.0008, B, segs=48, bevel=0.0006)
     lathe(part, [(r_top * 0.66, 0), (r_top * 0.7, 0.0), (r_top * 0.7, 0.024), (r_top * 0.6, 0.026)],
           M['cork'], axis_matrix(neck_end - neck_dir * 0.002, neck_dir), segs=32)
     single_reed_mouthpiece(part, M, neck_end + neck_dir * 0.01, neck_dir, r_top * 0.95, 0.085, (0, 0, -1))
     # Strap ring and thumb rest on the back.
-    body = Body(part, radius, lambda y: z0 + (y + 0.7) * 0.34, 0.36, metal=B)
+    body = Body(part, radius, lambda y: z0 + (y + 0.7) * 0.34, 0.36, metal=B, key_lift=0.011, chimneys=True)
     torus(part, body.surface(180, body.y_to_z(0.32), 0.006), (1, 0, 0), 0.005, 0.0011, B, segs=24, minor_segs=8)
     box(part, (0, 0, 0), (0.014, 0.018, 0.008), B, body.frame(180, body.y_to_z(-0.1), 0.003))
 

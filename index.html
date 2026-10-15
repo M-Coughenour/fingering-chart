@@ -12,10 +12,7 @@
   <body>
     <header class="top">
       <h1>Fingering Chart <span>3D</span></h1>
-      <label class="picker">
-        <span class="sr-only">Instrument</span>
-        <select id="instrument"></select>
-      </label>
+      <div class="picker" id="instrument" role="group" aria-label="Instrument"></div>
       <div class="variant" id="variant" role="group" aria-label="Version" hidden></div>
     </header>
 
@@ -61,6 +58,7 @@
             <button data-octaves="4" aria-pressed="false">4</button>
             <span class="octaves-label">oct</span>
           </div>
+          <button class="arpeggio" id="arpeggio" aria-pressed="false" disabled>Arpeggio</button>
         </div>
         <p class="scale-info" id="scale-info"></p>
 

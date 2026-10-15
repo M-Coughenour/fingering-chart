@@ -6,6 +6,7 @@ import { Fingering } from './highlight.js';
 import { loadSample, playNote, stopAll } from './audio.js';
 import { midiToBothNames, midiToName } from './notes.js';
 import { createStaff } from './staff.js';
+import { createPicker } from './picker.js';
 import { MAJOR_KEYS, scaleSequence } from './data/scales.js';
 import { startTuner, stopTuner } from './tuner.js';
 
@@ -24,10 +25,11 @@ const ui = {
   tunerNote: $('tuner-note'), tunerNeedle: $('tuner-needle'), tunerReadout: $('tuner-readout'),
   divider: $('divider'), scaleKey: $('scale-key'), octaves: $('octaves'), staffWrap: $('staff-wrap'),
   staffTitle: $('staff-title'), staffPrev: $('staff-prev'), staffNext: $('staff-next'), staffFull: $('staff-full'),
-  scaleInfo: $('scale-info'),
+  scaleInfo: $('scale-info'), arpeggio: $('arpeggio'),
 };
 
-const state = { inst: null, index: 0, alt: 0, fingering: null, scaleTimer: null };
+// staffPos: staff position to highlight on the next render (scale notes repeat on the way down).
+const state = { inst: null, index: 0, alt: 0, fingering: null, scaleTimer: null, arpeggio: false, staffPos: undefined };
 const view = createScene(ui.viewer);
 view.onFrame.add((dt, t) => state.fingering?.update(dt, t));
 
@@ -37,7 +39,8 @@ const saved = (() => {
 })();
 // Layout and scale choices: { panelW, viewerH, scaleKey, octaves, variants }.
 // `variants` remembers the last version picked per instrument (menu id -> instrument id).
-const prefs = { scaleKey: 'chromatic', octaves: 1, ...saved.prefs };
+// The scale always starts on Chromatic; the octave count is remembered.
+const prefs = { octaves: 1, ...saved.prefs, scaleKey: 'chromatic' };
 prefs.variants = { ...prefs.variants };
 function save() {
   try {
@@ -48,19 +51,18 @@ function save() {
 }
 
 // ---------------------------------------------------------------- instrument picker
-for (const [family, label] of [['woodwind', 'Woodwinds'], ['brass', 'Brass']]) {
-  const group = document.createElement('optgroup');
-  group.label = label;
-  for (const inst of INSTRUMENTS.filter((i) => i.family === family && !i.variantOf)) {
-    group.append(new Option(inst.name, inst.id));
-  }
-  ui.instrument.append(group);
-}
-ui.instrument.addEventListener('change', () => {
-  // Reopen the version used last, if it's still a version of this instrument.
-  const last = INSTRUMENTS.find((i) => i.id === prefs.variants[ui.instrument.value]);
-  selectInstrument(last && baseOf(last) === ui.instrument.value ? last.id : ui.instrument.value);
-});
+const picker = createPicker(
+  ui.instrument,
+  [['woodwind', 'Woodwinds'], ['brass', 'Brass']].map(([family, label]) => ({
+    label,
+    options: INSTRUMENTS.filter((i) => i.family === family && !i.variantOf).map((i) => ({ value: i.id, label: i.name })),
+  })),
+  (id) => {
+    // Reopen the version used last, if it's still a version of this instrument.
+    const last = INSTRUMENTS.find((i) => i.id === prefs.variants[id]);
+    selectInstrument(last && baseOf(last) === id ? last.id : id);
+  },
+);
 
 /** Version toggle (e.g. 3 / 4 valves) for instruments that come in more than one build. */
 function syncVariants(inst) {
@@ -81,7 +83,7 @@ async function selectInstrument(id, midi) {
   stopScale();
   const inst = getInstrument(id);
   state.inst = inst;
-  ui.instrument.value = baseOf(inst);
+  picker.value = baseOf(inst);
   if (inst.variant) prefs.variants[baseOf(inst)] = inst.id;
   syncVariants(inst);
   const found = inst.chart.findIndex((e) => e.midi === midi);
@@ -157,15 +159,18 @@ function render() {
   if (!current.keys.length && !current.slide) add(inst.family === 'brass' ? 'Open (no valves)' : 'All open', 'open');
 
   state.fingering?.show(current.keys, current.slide);
-  staff?.select(state.index);
+  staff?.select(state.index, state.staffPos);
+  state.staffPos = undefined;
   updateScaleInfo();
   ui.staffTitle.textContent = midiToBothNames(entry.midi);
   save();
   syncSustain();
 }
 
-function go(index) {
+/** Show chart note `index`; `pos` picks which staff position to highlight when it repeats. */
+function go(index, pos) {
   state.index = Math.max(0, Math.min(state.inst.chart.length - 1, index));
+  state.staffPos = pos;
   state.alt = 0;
   render();
 }
@@ -176,12 +181,31 @@ ui.range.addEventListener('input', () => go(Number(ui.range.value)));
 ui.alt.addEventListener('click', () => { state.alt++; render(); });
 
 // ---------------------------------------------------------------- note staff
+// Chromatic shows the instrument's whole range; a major scale shows exactly what Play scale
+// plays (up and back down), spelled in the key.
 let staff = null;
+let staffItems = [];
 function buildStaff() {
-  staff = createStaff(ui.staff, state.inst.chart, state.inst.clef ?? 'treble', (i) => {
-    go(i);
+  const { chart, clef } = state.inst;
+  if (prefs.scaleKey === 'chromatic') {
+    staffItems = chart.map((e, index) => ({ index, midi: e.midi }));
+  } else {
+    const { indices, letters } = scaleNotes();
+    staffItems = indices.map((index, i) => ({ index, midi: chart[index].midi, letter: letters[i] }));
+  }
+  staff = createStaff(ui.staff, staffItems, clef ?? 'treble', (i, pos) => {
+    go(i, pos);
     if (!sustain) playCurrent(0.9); // while Play is on, go() already switched the note
   });
+  staff.select(state.index);
+}
+
+/** Step along the staff (fullscreen ‹ ›): through the scale as written, or chromatically. */
+function stepStaff(delta) {
+  if (prefs.scaleKey === 'chromatic') return go(state.index + delta);
+  const from = staff.position < 0 ? (delta > 0 ? -1 : staffItems.length) : staff.position;
+  const pos = Math.max(0, Math.min(staffItems.length - 1, from + delta));
+  go(staffItems[pos].index, pos);
 }
 
 // ---------------------------------------------------------------- audio
@@ -242,27 +266,33 @@ function syncSustain() {
 ui.play.addEventListener('click', () => setPlaying(!sustain));
 
 // ---------------------------------------------------------------- scale playback
+const arpeggioOn = () => state.arpeggio && prefs.scaleKey !== 'chromatic';
+
 function stopScale() {
   clearTimeout(state.scaleTimer);
   state.scaleTimer = null;
-  ui.scale.textContent = 'Play scale';
+  ui.scale.textContent = arpeggioOn() ? 'Play arpeggio' : 'Play scale';
   ui.scale.setAttribute('aria-pressed', 'false');
 }
 
-/** Chart indices to play: the chromatic run from the current note, or a major scale. */
+/**
+ * Chart indices to play: the chromatic run from the current note, or a major scale or
+ * arpeggio (with each note's staff letter, spelled in the key).
+ */
 function scaleNotes() {
   const { chart, transpose } = state.inst;
   if (prefs.scaleKey === 'chromatic') {
     const from = state.index === chart.length - 1 ? 0 : state.index;
-    return { indices: chart.slice(from).map((_, i) => from + i), label: '' };
+    return { indices: chart.slice(from).map((_, i) => from + i), letters: [], label: '' };
   }
   const key = MAJOR_KEYS.find((k) => k.name === prefs.scaleKey) ?? MAJOR_KEYS[0];
-  const seq = scaleSequence(chart, transpose, key.pc, prefs.octaves);
-  if (!seq.indices.length) return { indices: [], label: `${key.name} major doesn't fit this instrument's range.` };
-  const written = transpose ? ` · written ${midiToName(seq.tonic).replace(/-?\d+$/, '')} major` : '';
+  const seq = scaleSequence(chart, transpose, key.pc, prefs.octaves, { arpeggio: state.arpeggio });
+  const kind = state.arpeggio ? 'major arpeggio' : 'major';
+  if (!seq.indices.length) return { indices: [], letters: [], label: `${key.name} ${kind} doesn't fit this instrument's range.` };
+  const written = transpose ? ` · written ${midiToName(seq.tonic).replace(/-?\d+$/, '')} ${kind}` : '';
   const oct = `${seq.octaves} octave${seq.octaves > 1 ? 's' : ''}`;
   const limited = seq.octaves < prefs.octaves ? ` (range allows ${seq.octaves})` : '';
-  return { indices: seq.indices, label: `Concert ${key.name} major${written} · ${oct}${limited}` };
+  return { indices: seq.indices, letters: seq.letters, label: `Concert ${key.name} ${kind}${written} · ${oct}${limited}` };
 }
 
 ui.scale.addEventListener('click', () => {
@@ -274,8 +304,10 @@ ui.scale.addEventListener('click', () => {
   ui.scale.textContent = 'Stop';
   ui.scale.setAttribute('aria-pressed', 'true');
   let n = 0;
+  // The staff shows the same sequence for a major scale, so highlight position n there.
+  const onStaff = prefs.scaleKey !== 'chromatic';
   const step = () => {
-    go(indices[n]);
+    go(indices[n], onStaff ? n : undefined);
     playCurrent(0.55);
     n++;
     state.scaleTimer = n < indices.length ? setTimeout(step, 650) : setTimeout(stopScale, 600);
@@ -287,12 +319,18 @@ ui.scale.addEventListener('click', () => {
 ui.scaleKey.append(new Option('Chromatic', 'chromatic'));
 for (const k of MAJOR_KEYS) ui.scaleKey.append(new Option(`${k.name} major (concert)`, k.name));
 const octaveButtons = [...ui.octaves.querySelectorAll('button')];
+/** Sync the scale controls and redraw the staff for the chosen scale. */
 function syncScaleOptions() {
+  const chromatic = prefs.scaleKey === 'chromatic';
   ui.scaleKey.value = prefs.scaleKey;
   for (const b of octaveButtons) {
     b.setAttribute('aria-pressed', String(Number(b.dataset.octaves) === prefs.octaves));
-    b.disabled = prefs.scaleKey === 'chromatic';
+    b.disabled = chromatic;
   }
+  ui.arpeggio.disabled = chromatic;
+  ui.arpeggio.setAttribute('aria-pressed', String(arpeggioOn()));
+  stopScale(); // never playing here (changeScale stops first); refreshes the button label
+  if (state.inst) buildStaff();
   updateScaleInfo();
 }
 /** Describe what Play scale will play for the current instrument and choices. */
@@ -300,10 +338,13 @@ function updateScaleInfo() {
   if (!state.inst) return;
   ui.scaleInfo.textContent = prefs.scaleKey === 'chromatic' ? 'Chromatic, from the current note to the top' : scaleNotes().label;
 }
-ui.scaleKey.addEventListener('change', () => { prefs.scaleKey = ui.scaleKey.value; syncScaleOptions(); save(); });
+// Changing the scale mid-playback would leave the staff and the sequence out of step.
+const changeScale = (fn) => { if (state.scaleTimer) stopAll(); fn(); syncScaleOptions(); save(); };
+ui.scaleKey.addEventListener('change', () => changeScale(() => { prefs.scaleKey = ui.scaleKey.value; }));
 for (const b of octaveButtons) {
-  b.addEventListener('click', () => { prefs.octaves = Number(b.dataset.octaves); syncScaleOptions(); save(); });
+  b.addEventListener('click', () => changeScale(() => { prefs.octaves = Number(b.dataset.octaves); }));
 }
+ui.arpeggio.addEventListener('click', () => changeScale(() => { state.arpeggio = !state.arpeggio; }));
 syncScaleOptions();
 
 // ---------------------------------------------------------------- tuner
@@ -439,8 +480,8 @@ function setStaffFullscreen(on) {
 }
 
 ui.staffFull.addEventListener('click', () => setStaffFullscreen(!staffFullscreen));
-ui.staffPrev.addEventListener('click', () => go(state.index - 1));
-ui.staffNext.addEventListener('click', () => go(state.index + 1));
+ui.staffPrev.addEventListener('click', () => stepStaff(-1));
+ui.staffNext.addEventListener('click', () => stepStaff(1));
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement && staffFullscreen) setStaffFullscreen(false);
 });

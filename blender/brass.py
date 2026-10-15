@@ -195,7 +195,7 @@ def trumpet_like(M, bell_r=0.0615, bell_len=0.24, bore=0.0059, scale=1.0, flare=
         sleeve(body, M, (0.122, lead_y, z), (0.15, lead_y, z), bore)
     brace(body, B, (0.168, lead_y, lead_z - bore), (0.168, lead_y, low_z + bore), 0.0014)
     # Water key on the bottom of the bow.
-    wk = Vector((slide_x + 0.004, lead_y, low_z - 0.003))
+    wk = Vector((slide_x - leg + 0.002, lead_y, low_z - 0.003))
     cylinder(body, wk + Vector((0, 0, -0.004)), UP, 0.006, 0.0032, B, segs=24)
     tube(body, [wk + Vector((0.0, 0, -0.004)), wk + Vector((-0.022, 0, -0.008)), wk + Vector((-0.045, 0, -0.006))],
          0.0011, M['nickel'], bend=0.01, segs=12, caps=True)
@@ -364,98 +364,125 @@ def tuba(M):
     return upright(M, valves=4, bell_r=0.165, body_r=0.045, scale=1.45, valve_k=1.25)
 
 
+def tuba3(M):
+    return upright(M, valves=3, bell_r=0.165, body_r=0.045, scale=1.45, valve_k=1.25)
+
+
 # ---------------------------------------------------------------- sousaphone
 
 
 def sousaphone(M):
-    """BB♭ sousaphone as in a catalogue photo: the body loop faces the camera (-Y) with the
-    26" bell sitting on top of it, about as wide as the loop and facing the same way. The
-    body tubing spirals outward from the valves (two concentric passes, the outer one
-    thickest) and its end climbs behind the bell as the gooseneck. The three pistons sit
-    inside the ring on the right, tilted, with long slides curving down inside the loop."""
+    """BB♭ sousaphone shaped as it's worn (references: player photos plus catalogue shots,
+    which show the body from the player's side with the bell turned to the camera). The
+    origin is the player's chest; the player and the bell face -Y and the player's left is
+    +X. The hoop goes over the left shoulder, down the back to the right hip and back up
+    across the front low down. The valve block sits in front of the belly inside the hoop:
+    three casings stacked one above another (valve 1 on top) lying nearly on their side,
+    buttons pointing to the player's right (and a little up and forward) for the right hand,
+    their slides running the other way toward the player's left. The mouthpipe climbs from
+    the top of the block to the mouthpiece; valve 3 feeds the hoop, which widens over about
+    1.5 turns into the gooseneck rising behind the head to the 26" bell."""
     body = Part('Body')
     parts = [body]
     B, N = M['brass'], M['nickel']
 
-    # Body loop: a spiral in the XZ plane, widening and stepping back slightly each turn.
-    th0, th1 = math.radians(-70), math.radians(450)
+    # Hoop frame: u toward the left shoulder; v toward the front and down (the hoop leans
+    # forward so its front pass runs low, under the valves); n the plane's normal.
+    c = Vector((-0.1, 0, -0.02))
+    u = Vector((0.552, 0, 0.834)).normalized()
+    w = u.cross(Vector((0, -1, 0))).normalized()
+    v = (Vector((0, -1, 0)) * math.cos(math.radians(45)) + w * math.sin(math.radians(45))).normalized()
+    n = u.cross(v)
+    # Starts at the front, low on the right; ends behind the upper back after ~1.5 turns.
+    th0, th1 = math.radians(130), math.radians(660)
 
-    def loop_point(t):
-        th = th0 + (th1 - th0) * t
-        R = 0.2 + 0.135 * t
-        return Vector((R * math.cos(th), 0.025 * t, R * math.sin(th)))
+    def hoop(th):
+        """Centreline of the body tubing at hoop angle th (radians, th0..th1)."""
+        t = (th - th0) / (th1 - th0)
+        R = 0.31 + 0.07 * t
+        return c + R * (math.cos(th) * u + math.sin(th) * v) + n * (-0.03 + 0.06 * t)
 
-    def loop_at(deg):
-        return loop_point((math.radians(deg) - th0) / (th1 - th0))
+    def hoop_r(t):
+        return 0.011 + 0.035 * max(0.0, t) ** 1.3
 
-    def loop_r(t):
-        return 0.022 + 0.034 * t
+    def at(deg):
+        return hoop(math.radians(deg))
 
-    # Valve block inside the ring on the right, in front of the loop, buttons up and left.
+    # Valve block. `axis` points from a casing's bottom to its button: to the player's
+    # right, a little up and forward. `row` steps from valve 1 (top) down to valve 3.
     k = 1.75
-    axis = Vector((-0.55, 0, 0.83)).normalized()
-    row = Vector((0.83, 0, 0.55)).normalized()
-    centre = Vector((0.12, -0.075, -0.06))
+    axis = Vector((-1, -0.35, 0.65)).normalized()
+    row = Vector((-0.1, 0, -1))
+    row = (row - axis * row.dot(axis)).normalized()
+    front = axis.cross(row).normalized()
+    if front.y > 0:
+        front = -front
+    centre = Vector((-0.05, -0.3, -0.08))
     pos = [centre + row * (0.048 * (i - 1)) for i in range(3)]
     for i, p in enumerate(pos, 1):
         parts.append(piston_valve(body, M, f'valve{i}', p, k=k, travel=0.022, axis=axis))
-    under = [p - axis * 0.075 for p in pos]
 
-    # Lead-in from under valve 1 to the start of the spiral, then the loop itself.
-    steps = 120
-    spiral = [loop_point(i / steps) for i in range(steps + 1)]
-    lead_in = [under[0], under[0] - axis * 0.03 + Vector((-0.04, 0.02, -0.03)), Vector((0.0, 0.0, -0.17))]
-    tube(body, lead_in + spiral, lambda u: loop_r(max(0.0, (u - 0.04) / 0.96)), B, bend=0.03, segs=40,
-         max_step=0.012)
+    # Valve slides: U's out of the casings' far ends toward the player's left, one above
+    # another like the casings, the 3rd longest.
+    out = (-axis + Vector((0, 0, 0.3))).normalized()
+    for p, depth in zip(pos, (0.12, 0.08, 0.16)):
+        end = p - axis * 0.05
+        u_slide(body, M, end + front * 0.013, end - front * 0.013, out, depth, 0.0105, max_step=0.01)
+    # Knuckles joining the casings on the front side.
+    for pa, pb in zip(pos, pos[1:]):
+        tube(body, [pa + front * 0.02, (pa + pb) / 2 + front * 0.032, pb + front * 0.02], 0.0095, B, bend=0.03)
 
-    # Gooseneck: from the top of the loop up behind the bell, turning forward into it.
+    # Mouthpipe: out of the top of valve 1, up to the mouthpiece, which comes in from the
+    # player's left to the mouth.
+    up = -row
+    m0 = pos[0] - axis * 0.035 + up * 0.016
+    recv = Vector((0.1, -0.2, 0.3))
+    mdir = Vector((-0.6, 0.6, 0.1)).normalized()
+    mp = [m0, m0 + up * 0.08, Vector((0.13, -0.26, 0.18)), recv - mdir * 0.07, recv]
+    tube(body, mp, (0.0105, 0.0075), B, bend=[0.03, 0.05, 0.04], max_step=0.008)
+    ferrule(body, N, mp[2], (mp[3] - mp[2]).normalized(), 0.0088, 0.016)
+    cylinder(body, recv - mdir * 0.03, mdir, 0.03, 0.0095, N, segs=40, bevel=0.0008)
+    mouthpiece(body, M['silver'], recv - mdir * 0.012, mdir, k=1.75)
+
+    # Valve 3 out of its underside down into the hoop, then the hoop itself.
+    s0 = pos[2] - up * 0.016 - axis * 0.02
+    steps = 140
+    spiral = [hoop(th0 + (th1 - th0) * i / steps) for i in range(steps + 1)]
+    lead = [s0, s0 - up * 0.05]
+    lead_len = sum((b - a).length for a, b in zip(lead, lead[1:] + spiral[:1]))
+    total = lead_len + sum((b - a).length for a, b in zip(spiral, spiral[1:]))
+    f = lead_len / total  # share of the path before the hoop starts
+    tube(body, lead + spiral, lambda x: hoop_r((x - f) / (1 - f)), B, bend=0.04, segs=40, max_step=0.012)
+
+    # Gooseneck: from behind the upper back, up behind the head, turning forward into the
+    # bell over the left shoulder.
     E = spiral[-1]
-    throat = Vector((0.0, 0.2, 0.6))
-    neck = [E, E + Vector((-0.07, 0.03, 0.04)), Vector((-0.06, 0.22, 0.44)), Vector((-0.01, 0.28, 0.57)),
-            Vector((0.0, 0.24, 0.6)), throat]
-    tube(body, neck, (loop_r(1.0), 0.066), B, bend=[0.06, 0.1, 0.06, 0.04], segs=40, max_step=0.012)
+    throat = Vector((0.1, 0.17, 0.72))
     bell_dir = Vector((0, -1, 0))
+    tangent = (spiral[-1] - spiral[-2]).normalized()
+    neck = [E, E + tangent * 0.1, Vector((0.0, 0.3, 0.56)), Vector((0.06, 0.32, 0.72)), throat]
+    tube(body, neck, (hoop_r(1.0), 0.066), B, bend=[0.2, 0.08, 0.1], segs=40, max_step=0.012)
     bell_at = add_bell(body, B, throat, bell_dir, 0.46, 0.066, 0.33, gamma=1.0, wall=0.0012, segs=144)
-    for off, rr, w in ((-0.03, 0.071, 0.028), (0.002, 0.075, 0.02)):
-        cylinder(body, throat + bell_dir * off, bell_dir, w, rr, B, segs=64, bevel=0.002)
+    # Bell collar (where the bell comes off) and its clamp screw on top.
+    for off, rr, wd in ((-0.03, 0.071, 0.028), (0.002, 0.075, 0.02)):
+        cylinder(body, throat + bell_dir * off, bell_dir, wd, rr, B, segs=64, bevel=0.002)
     clamp = throat + Vector((0, 0, 0.078))
     cylinder(body, clamp - UP_V * 0.006, UP_V, 0.022, 0.007, N, segs=20)
     lathe(body, [(0, 0), (0.016, 0), (0.017, 0.004), (0.016, 0.008), (0, 0.009)], N,
           axis_matrix(clamp + UP_V * 0.016, UP_V), segs=24)
 
-    # Valve slides: long U's from under the casings, curving down and left inside the loop.
-    slide_dir = Vector((-0.6, 0, -0.8)).normalized()
-    for i, p in enumerate(under):
-        u_slide(body, M, p + Vector((0, -0.013, 0)), p + Vector((0, 0.013, 0)), slide_dir,
-                (0.21, 0.14, 0.26)[i], 0.0105, max_step=0.01)
-    # Knuckles between the casings and the main tuning slide reaching up and right.
-    for pa, pb in zip(pos, pos[1:]):
-        tube(body, [pa + Vector((0, -0.02, 0)), (pa + pb) / 2 + Vector((0, -0.032, 0)), pb + Vector((0, -0.02, 0))],
-             0.0095, B, bend=0.03)
-    top3 = pos[2] + axis * 0.03
-    u_slide(body, M, top3 + Vector((0, -0.012, 0)), top3 + Vector((0, 0.012, 0)), row, 0.13, 0.012, max_step=0.01)
+    # Braces (ends sit inside the tubes they join): between the hoop passes, valve block to
+    # the hoop, gooseneck to the shoulder, and the long rod from the bell down to the hoop.
+    for deg in (160, 235, 300):
+        brace(body, B, at(deg), at(deg + 360), 0.004)
+    brace(body, B, pos[1] + axis * 0.02, at(475), 0.005)
+    brace(body, B, pos[2] + axis * 0.03, at(500), 0.005)
+    brace(body, B, neck[2], at(335), 0.005)
+    yb = 0.22
+    brace(body, B, throat + bell_dir * yb + Vector((0, 0, -bell_at(yb) * 0.9)), at(380), 0.004)
 
-    # Mouthpipe: up and left from the top valve to the mouthpiece inside the top of the ring.
-    m0 = pos[0] + axis * 0.04 + Vector((0, -0.022, 0))
-    recv = Vector((-0.01, -0.12, 0.19))
-    mdir = Vector((-0.8, -0.35, 0.45)).normalized()
-    mp = [m0, m0 + axis * 0.06, Vector((0.06, -0.11, 0.17)), recv]
-    tube(body, mp, (0.0105, 0.0075), B, bend=[0.04, 0.05], max_step=0.008)
-    ferrule(body, N, mp[2], (mp[3] - mp[2]).normalized(), 0.0088, 0.016)
-    cylinder(body, recv - mdir * 0.03, mdir, 0.03, 0.0095, N, segs=40, bevel=0.0008)
-    mouthpiece(body, M['silver'], recv - mdir * 0.012, mdir, k=1.75)
-
-    # Braces: between the passes, valve block to the loop, bell to the top of the loop.
-    for deg in (-20, 60, 150, 230):
-        p1, p2 = loop_at(deg), loop_at(deg + 360)
-        dd = (p2 - p1).normalized()
-        brace(body, B, p1 + dd * 0.02, p2 - dd * 0.045, 0.004)
-    brace(body, B, pos[1] + Vector((0, 0.02, 0)), loop_at(-5) + Vector((-0.02, 0, 0)), 0.005)
-    brace(body, B, pos[0] - axis * 0.03 + Vector((0, 0.02, 0)), loop_at(-50) + Vector((0, 0, 0.02)), 0.005)
-    yb = 0.2
-    brace(body, B, throat + bell_dir * yb + Vector((0.1, 0, -bell_at(yb) * 0.75)),
-          loop_at(400) + Vector((0, -0.02, 0.04)), 0.005)
-    return parts
+    # Turn it so the first view shows the valves, the hoop's depth and the bell.
+    return transform_all(parts, Matrix.Rotation(math.radians(35), 4, 'Z'))
 
 
 # ---------------------------------------------------------------- French horn
@@ -482,23 +509,29 @@ def french_horn(M):
     add_bell(body, B, pts[-1], bell_dir, 0.3, 0.028, 0.155, gamma=0.62, segs=128)
 
     # Inner coils of the F and B♭ sides, behind the valves.
-    for r, y in ((0.095, 0.0), (0.08, 0.015)):
-        tube(body, [Vector((r * math.cos(a / 40 * math.pi * 2), y, r * math.sin(a / 40 * math.pi * 2)))
-                    for a in range(0, 38)], 0.0055, B, bend=0.01, max_step=0.008)
-
     # Rotary valves in a row, caps toward the camera.
     vz = 0.0
     xs = (-0.04, -0.005, 0.03)
+    coil_r = 0.095
+    for r, y in ((coil_r, 0.0), (0.08, 0.015)):
+        coil = [Vector((r * math.cos(a / 40 * math.pi * 2), y, r * math.sin(a / 40 * math.pi * 2)))
+                for a in range(0, 38)]
+        tube(body, coil, 0.0055, B, bend=0.01, max_step=0.008)
+        # Both ends run forward into the valves.
+        tube(body, [coil[0], (xs[2] + 0.008, -0.035, vz + 0.004)], 0.005, B, bend=0.02)
+        tube(body, [coil[-1], (xs[1] + 0.006, -0.035, vz - 0.004)], 0.005, B, bend=0.02)
     for x in xs:
         rotary_valve(body, M, (x, -0.045, vz), (0, -1, 0))
     rotary_valve(body, M, (-0.075, -0.045, vz - 0.035), (0, -1, 0))
+    tube(body, [(-0.075, -0.045, vz - 0.025), (xs[0], -0.045, vz - 0.008)], 0.005, B)
     for xa, xb in zip(xs, xs[1:]):
         tube(body, [(xa, -0.045, vz + 0.017), (xb, -0.045, vz + 0.017)], 0.005, B)
     # Valve slides: pairs of U's above and below the valve row.
     for x, depth, up in ((xs[0], 0.07, 1), (xs[1], 0.05, 1), (xs[2], 0.09, 1),
                          (xs[0], 0.06, -1), (xs[1], 0.045, -1), (xs[2], 0.08, -1)):
-        y = -0.035 if up > 0 else -0.02
-        u_slide(body, M, (x - 0.007, y, vz + up * 0.02), (x + 0.007, y, vz + up * 0.02), (0.15, 0, up),
+        # Upper legs start on the connecting pipe; lower legs come out of the valve drum.
+        y, start = (-0.035, 0.02) if up > 0 else (-0.03, 0.012)
+        u_slide(body, M, (x - 0.007, y, vz + up * start), (x + 0.007, y, vz + up * start), (0.15, 0, up),
                 depth, 0.0048)
     # Levers: spatulas for fingers 1–3 stacked on the left, the thumb trigger below them.
     for i, x in enumerate(xs):
@@ -521,10 +554,13 @@ def french_horn(M):
     lg.transform(Matrix.Translation((0, 0.02, 0)) @ Matrix.Rotation(math.radians(-80), 4, 'Y') @
                  Matrix.Translation((0, -0.02, 0)))
     body.merge(lg)
+    # Braces from the inner coil out to the nearest pass of the wrap.
     for a in (30, 110, 200, 290):
         r = math.radians(a)
-        brace(body, B, (0.1 * math.cos(r), -0.02, 0.1 * math.sin(r)), (0.14 * math.cos(r), -0.02, 0.14 * math.sin(r)),
-              0.0016)
+        d = Vector((math.cos(r), 0, math.sin(r)))
+        wrap = min(pts[:60], key=lambda p: (p - d * p.length).length + abs(p.y) * 2)
+        foot = Vector((wrap.x, 0, wrap.z)).normalized()
+        brace(body, B, foot * (coil_r + 0.0055), wrap - foot * 0.007, 0.0016)
     return parts
 
 
@@ -570,6 +606,7 @@ def trombone_base(M, trigger=False):
         # F attachment: rotary valve in the gooseneck, extra tubing coiled inside the bell
         # section, thumb lever reaching forward to the left-hand grip.
         rotary_valve(body, M, (0.15, by + 0.005, zb + 0.06), (0, 1, 0), r=0.017, length=0.04)
+        tube(body, [(0.15, by * 0.37, zb + 0.011), (0.15, by + 0.005, zb + 0.06)], r * 0.95, B)
         coil = []
         for i in range(0, 61):
             a = i / 60 * math.pi * 2 * 0.95
@@ -612,5 +649,5 @@ def trombone_f(M):
 MODELS = {
     'trumpet': trumpet, 'mellophone': mellophone, 'frenchHorn': french_horn,
     'trombone': trombone, 'tromboneF': trombone_f, 'baritone': baritone,
-    'euphonium': euphonium, 'euphonium3': euphonium3, 'tuba': tuba, 'sousaphone': sousaphone,
+    'euphonium': euphonium, 'euphonium3': euphonium3, 'tuba': tuba, 'tuba3': tuba3, 'sousaphone': sousaphone,
 }

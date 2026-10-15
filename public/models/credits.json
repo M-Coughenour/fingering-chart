@@ -75,17 +75,22 @@
     "license": "original"
   },
   "tuba": {
-    "title": "BB♭ tuba, modeled in Blender",
+    "title": "BB♭ tuba (4 valves), modeled in Blender",
     "author": "mcoughen",
     "license": "original"
   },
   "sousaphone": {
-    "title": "Sousaphone, modeled in Blender",
+    "title": "Sousaphone, modeled in Blender from reference photos",
     "author": "mcoughen",
     "license": "original"
   },
   "euphonium3": {
     "title": "Euphonium (3 valves), modeled in Blender",
+    "author": "mcoughen",
+    "license": "original"
+  },
+  "tuba3": {
+    "title": "BB♭ tuba (3 valves), modeled in Blender",
     "author": "mcoughen",
     "license": "original"
   }

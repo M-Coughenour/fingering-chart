@@ -5,6 +5,11 @@ note: the 3D model highlights the keys/valves to press (or moves the trombone sl
 can hear the note played with real instrument samples. Runs in any modern browser on phones,
 Windows and Mac, and can be installed as an app (PWA).
 
+## Live site
+
+Every push to `main` builds the site and publishes it to GitHub Pages
+(`.github/workflows/deploy.yml`); it updates about a minute after the push.
+
 ```bash
 npm install
 npm run dev            # http://localhost:5173

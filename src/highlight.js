@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { SLIDE_STEP } from './models/brass.js';
 
 const PRESSED = new THREE.MeshStandardMaterial({
-  color: 0x29b6f6, emissive: 0x0288d1, emissiveIntensity: 0.8, metalness: 0.3, roughness: 0.35,
+  // Deep blue that glows brightly, so pressed keys stand out against brass and silver.
+  color: 0x1e6fd9, emissive: 0x1565c0, emissiveIntensity: 1.3, metalness: 0.2, roughness: 0.3,
   side: THREE.DoubleSide,
 });
 const HALF = new THREE.MeshStandardMaterial({
@@ -65,9 +66,9 @@ export class Fingering {
       u.grow += ((u.targetScale ?? 1) - u.grow) * k;
       part.scale.copy(u.restScale).multiplyScalar(u.grow);
     }
-    const pulse = 0.55 + 0.35 * Math.sin(time * 4);
-    PRESSED.emissiveIntensity = pulse;
-    HALF.emissiveIntensity = pulse;
+    const wave = Math.sin(time * 4);
+    PRESSED.emissiveIntensity = 1.3 + 0.4 * wave;
+    HALF.emissiveIntensity = 0.55 + 0.35 * wave;
   }
 
   missing(keys) {
