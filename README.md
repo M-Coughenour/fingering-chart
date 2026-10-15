@@ -5,6 +5,24 @@ note: the 3D model highlights the keys/valves to press (or moves the trombone sl
 can hear the note played with real instrument samples. Runs in any modern browser on phones,
 Windows and Mac, and can be installed as an app (PWA).
 
+## Downloads
+
+Get the apps from the repository's **Releases** page:
+
+| File | For | Install |
+| --- | --- | --- |
+| `Fingering-Chart-3D-win-x64.zip` | Windows 10/11 | Unzip, double-click **Fingering Chart 3D.exe**. Windows may say it "protected your PC" (the app isn't code-signed): **More info → Run anyway**. |
+| `Fingering-Chart-3D-mac-arm64.dmg` | Macs with Apple Silicon (M1 and later) | Open the .dmg, drag the app to Applications. First launch: right-click the app → **Open** (it isn't notarized). |
+| `Fingering-Chart-3D-mac-x64.dmg` | Intel Macs | Same as above. |
+| `Fingering-Chart-3D-android.apk` | Android 7+ phones and tablets | Download on the phone, tap it, allow installing from this source. |
+
+Instrument sounds stream from the internet the first time each instrument plays. iPhones can't
+install downloaded apps; use the website (once hosted) and **Add to Home Screen** instead.
+
+Building them: `npm run dist:win`, `npm run dist:mac` (Electron, output in `release/`) and
+`npm run dist:android` (Capacitor; needs JDK 21 and the Android SDK, with `JAVA_HOME` and
+`ANDROID_HOME` set).
+
 ## Live site
 
 Every push to `main` builds the site and publishes it to GitHub Pages

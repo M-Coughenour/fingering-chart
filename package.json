@@ -8,24 +8,79 @@
     "preview": "vite preview",
     "test": "node --test tests/*.test.js",
     "prepare-model": "node scripts/prepare-model.mjs",
-    "check-models": "node scripts/check-models.mjs"
+    "check-models": "node scripts/check-models.mjs",
+    "desktop": "npm run build && electron .",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:android": "npm run build && cap sync android && cd android && ./gradlew assembleDebug && cp app/build/outputs/apk/debug/app-debug.apk ../release/Fingering-Chart-3D-android.apk"
   },
   "private": true,
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "pitchy": "^4.1.0",
     "smplr": "^1.1.0",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@gltf-transform/cli": "^4.5.1",
     "@gltf-transform/core": "^4.5.1",
     "@gltf-transform/extensions": "^4.5.1",
     "@gltf-transform/functions": "^4.5.1",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "draco3dgltf": "^1.5.7",
+    "electron": "^38.8.6",
+    "electron-builder": "^26.15.3",
     "meshoptimizer": "^1.3.0",
     "vite": "^8.3.2",
     "vite-plugin-pwa": "^2.0.0"
   },
-  "type": "module"
+  "type": "module",
+  "allowScripts": {
+    "electron@38.8.6": true
+  },
+  "main": "electron/main.cjs",
+  "author": "mcoughen",
+  "build": {
+    "appId": "com.mcoughen.fingeringchart",
+    "productName": "Fingering Chart 3D",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "dist/**",
+      "package.json"
+    ],
+    "icon": "public/icons/icon-512.png",
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.music",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "The tuner listens to the note you play."
+      },
+      "identity": null
+    },
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "artifactName": "Fingering-Chart-3D-${os}-${arch}.${ext}"
+  }
 }

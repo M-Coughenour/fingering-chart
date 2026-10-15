@@ -1,0 +1,6 @@
+{
+  "appId": "com.mcoughen.fingeringchart",
+  "appName": "Fingering Chart 3D",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#14161c" }
+}

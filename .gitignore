@@ -3,3 +3,4 @@ dist
 # original downloads; optimized copies live in public/models
 models-src
 __pycache__/
+release
